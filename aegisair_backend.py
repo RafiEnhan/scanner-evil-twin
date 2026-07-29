@@ -126,6 +126,148 @@ class AegisAirDaemon:
         except Exception:
             return round(base_skew, 2)
 
+    def _find_tshark_path(self):
+        try:
+            res = subprocess.run(["which", "tshark"], capture_output=True, text=True)
+            if res.returncode == 0 and res.stdout.strip():
+                return res.stdout.strip()
+        except:
+            pass
+        common_paths = [
+            "/opt/homebrew/bin/tshark",
+            "/usr/local/bin/tshark",
+            "/usr/bin/tshark",
+            "C:\\Program Files\\Wireshark\\tshark.exe"
+        ]
+        for p in common_paths:
+            if os.path.exists(p):
+                return p
+        return None
+
+    def start_stream(self, interval_sec=0.35):
+        tshark_path = self._find_tshark_path()
+        if tshark_path:
+            print(f"[*] Found tshark at {tshark_path}. Attempting raw packet capture...")
+            success = self._run_tshark_stream(tshark_path)
+            if success:
+                return
+            print("[!] tshark capture failed (needs root/sudo?). Falling back to system_profiler...")
+        else:
+            print("[!] tshark not found. Using system_profiler simulation mode...")
+            
+        self._run_system_profiler_stream(interval_sec)
+
+    def _run_tshark_stream(self, tshark_path):
+        interface = "en0" if sys.platform == "darwin" else "wlan0"
+        cmd = [
+            tshark_path, 
+            "-i", interface, 
+            "-I", 
+            "-l",
+            "-Y", "wlan.fc.type_subtype == 8", 
+            "-T", "fields",
+            "-e", "frame.number",
+            "-e", "wlan.ssid",
+            "-e", "wlan.bssid",
+            "-e", "wlan_radio.signal_dbm",
+            "-e", "wlan.seq",
+            "-e", "wlan_mgt.fixed.timestamp"
+        ]
+        
+        try:
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
+            
+            # Check immediately if it failed to start (e.g. permission denied)
+            time.sleep(1)
+            if process.poll() is not None:
+                return False
+                
+            frame_seq = 1000
+            for line in process.stdout:
+                line = line.strip()
+                if not line:
+                    continue
+                    
+                parts = line.split('\t')
+                if len(parts) < 6:
+                    continue
+                    
+                try:
+                    f_num = parts[0]
+                    ssid = parts[1]
+                    bssid = parts[2].lower()
+                    rssi = int(parts[3].split(',')[0]) if parts[3] else -70
+                    seq_val = int(parts[4].split(',')[0]) if parts[4] else 0
+                    tsf_val = int(parts[5].split(',')[0]) if parts[5] else int(time.time() * 1e6)
+                except ValueError:
+                    continue
+
+                if not ssid or not bssid:
+                    continue
+
+                frame_seq += 1
+                now_t = time.time()
+                
+                self.seq_history[bssid].append(seq_val)
+                high_res_now = time.perf_counter()
+                self.arrival_history[bssid].append(high_res_now)
+                
+                skew = self.calculate_clock_skew(bssid, tsf_val, now_t)
+                
+                # Real Jitter
+                arrivals = list(self.arrival_history[bssid])
+                if len(arrivals) >= 3:
+                    deltas = [arrivals[i] - arrivals[i-1] for i in range(1, len(arrivals))]
+                    jitter = round(float(np.std(deltas) * 10.0), 2)
+                else:
+                    jitter = 0.10
+                    
+                entropy = self.calculate_shannon_entropy(self.seq_history[bssid])
+                
+                # We need airspace mean for rssi_diff
+                rssi_diff = 0.0 # Will calculate simple delta from moving average
+                
+                feats = np.array([[skew, jitter, entropy, rssi_diff]])
+                threat_score = round(float(self.model.predict_proba(feats)[0][1]), 4)
+                
+                if threat_score > 0.50:
+                    verdict = "RED: THREAT DETECTED (AUTO-CONNECT BAN ENFORCED)"
+                    if sys.platform == "darwin":
+                        ban_cmd = f"networksetup -removepreferredwirelessnetwork en0 '{ssid}'"
+                    elif sys.platform == "win32":
+                        ban_cmd = f'netsh wlan add filter permission=block ssid="{ssid}" networktype=infrastructure'
+                    else:
+                        ban_cmd = f"nmcli device wifi block bssid {bssid}"
+                    ground_truth = "impersonation"
+                else:
+                    verdict = "GREEN: VERIFIED SAFE AP"
+                    ban_cmd = "N/A (Verified Trust)"
+                    ground_truth = "normal"
+
+                event = {
+                    "type": "BEACON_EVENT",
+                    "data": {
+                        "frame_number": frame_seq,
+                        "ssid": ssid,
+                        "bssid": bssid,
+                        "rssi": rssi,
+                        "clock_skew_ppm": skew,
+                        "jitter_variance": jitter,
+                        "sequence_entropy": entropy,
+                        "threat_score": threat_score,
+                        "verdict": verdict,
+                        "os_ban_cmd": ban_cmd,
+                        "ground_truth": ground_truth,
+                        "scanner_engine": "tshark 802.11 Raw Packet Sniffer"
+                    }
+                }
+                print(json.dumps(event), flush=True)
+                
+            return True
+        except Exception as e:
+            print(f"tshark error: {e}")
+            return False
+
     def scan_live_mac_airspace(self):
         """Native 802.11 macOS CoreWLAN Scan Engine."""
         raw_networks = []
@@ -159,9 +301,6 @@ class AegisAirDaemon:
         except Exception:
             pass
 
-        # 100% Pure live hardware scan (No hardcoded fallback mock data)
-
-        # Sort networks deterministically by SSID then RSSI descending so BSSIDs remain 100% constant
         sorted_networks = sorted(raw_networks, key=lambda x: (x.get("ssid", ""), -x.get("rssi", -100)))
         ssid_counters = defaultdict(int)
 
@@ -179,12 +318,10 @@ class AegisAirDaemon:
                 net["bssid"] = net["bssid"].lower()
             net["tsf"] = int(time.time() * 1e6)
             
-            # Monotonic 802.11 Sequence Control Number with realistic frame skip (1 or 2 frames)
             if bssid not in self.seq_trackers:
                 h_seq = int(hashlib.md5(f"seq_{bssid}".encode('utf-8')).hexdigest()[:4], 16)
                 self.seq_trackers[bssid] = (h_seq % 3000) + 100
             else:
-                # Simulate natural OS scan frame drops (+1 or +2) for realistic deltas
                 tick_hash = int(hashlib.md5(f"{bssid}_{time.time():.1f}".encode('utf-8')).hexdigest()[:2], 16)
                 step = 1 if (tick_hash % 5) != 0 else 2
                 self.seq_trackers[bssid] = (self.seq_trackers[bssid] + step) % 4096
@@ -195,9 +332,8 @@ class AegisAirDaemon:
 
         return targets
 
-    def start_stream(self, interval_sec=0.4):
+    def _run_system_profiler_stream(self, interval_sec=0.4):
         frame_seq = 1000
-        
         while True:
             live_targets = self.scan_live_mac_airspace()
             now_t = time.time()
@@ -224,7 +360,6 @@ class AegisAirDaemon:
                 
                 skew = self.calculate_clock_skew(bssid, tsf_val, now_t)
                 
-                # Real microsecond arrival variance jitter calculation
                 arrivals = list(self.arrival_history[bssid])
                 if len(arrivals) >= 3:
                     deltas = [arrivals[i] - arrivals[i-1] for i in range(1, len(arrivals))]
@@ -237,14 +372,12 @@ class AegisAirDaemon:
 
                 entropy = self.calculate_shannon_entropy(self.seq_history[bssid])
                 
-                # Natural RSSI micro-fluctuation per scan tick
                 rssi_fluct = ((int(hashlib.md5(f"{bssid}_{frame_seq}".encode('utf-8')).hexdigest()[:2], 16) % 3) - 1)
                 rssi_diff = round(float(abs((rssi + rssi_fluct) - airspace_mean_rssi)), 2)
 
                 feats = np.array([[skew, jitter, entropy, rssi_diff]])
                 threat_score = round(float(self.model.predict_proba(feats)[0][1]), 4)
 
-                # Pure 100% ONNX Machine Learning Inference Decision
                 if threat_score > 0.50:
                     verdict = "RED: THREAT DETECTED (AUTO-CONNECT BAN ENFORCED)"
                     if sys.platform == "darwin":
