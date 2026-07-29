@@ -1,5 +1,6 @@
 import math
 import hashlib
+import numpy as np
 from collections import defaultdict
 
 def calculate_shannon_entropy(seq_list):
@@ -41,3 +42,32 @@ def calculate_clock_skew(bssid, tsf_val, current_time, tsf_history):
         return res_skew
     except Exception:
         return round(base_skew, 2)
+
+def calculate_tsf_jitter(bssid, tsf_val, tsf_val_history):
+    """
+    Calculates Beacon Jitter directly using AP Hardware TSF (Time Synchronization Function) timestamps.
+    Immune to receiver OS background scanning & AWDL scheduling delays on macOS/Windows.
+    """
+    tsf_val_history[bssid].append(tsf_val)
+    history = list(tsf_val_history[bssid])
+
+    if len(history) < 3:
+        return 0.05
+
+    # Compute deltas in seconds between consecutive hardware TSF beacon timestamps
+    tsf_deltas = []
+    for i in range(1, len(history)):
+        diff = history[i] - history[i-1]
+        if diff > 0:
+            delta_sec = diff / 1e6  # convert microseconds to seconds
+            # Filter valid beacon interval windows (0.01s to 2.0s)
+            if 0.01 <= delta_sec <= 2.0:
+                tsf_deltas.append(delta_sec)
+
+    if len(tsf_deltas) >= 2:
+        # Standard deviation of hardware TSF beacon emission intervals
+        jitter_val = float(np.std(tsf_deltas) * 100.0)
+        return round(float(jitter_val), 2)
+
+    return 0.05
+

@@ -6,7 +6,7 @@ from collections import defaultdict, deque
 
 # Import modules from backend/
 from backend.models.rf_onnx import load_trained_model
-from backend.core.features import calculate_shannon_entropy, calculate_clock_skew
+from backend.core.features import calculate_shannon_entropy, calculate_clock_skew, calculate_tsf_jitter
 from backend.scanners.tshark_scanner import find_tshark_path, start_tshark_process
 from backend.scanners.system_profiler_scanner import scan_live_mac_airspace
 
@@ -21,6 +21,7 @@ class AegisAirDaemon:
         
         # State tracking for features
         self.tsf_history = defaultdict(lambda: deque(maxlen=20))
+        self.tsf_raw_history = defaultdict(lambda: deque(maxlen=20))
         self.seq_history = defaultdict(lambda: deque(maxlen=30))
         self.arrival_history = defaultdict(lambda: deque(maxlen=20))
 
@@ -33,14 +34,16 @@ class AegisAirDaemon:
         
         skew = calculate_clock_skew(bssid, tsf_val, now_t, self.tsf_history)
         
-        arrivals = list(self.arrival_history[bssid])
-        if len(arrivals) >= 3:
+        # Calculate Beacon Jitter using AP Hardware TSF (immune to host OS scanning / AWDL delays)
+        jitter = calculate_tsf_jitter(bssid, tsf_val, self.tsf_raw_history)
+        if jitter == 0.05 and len(self.arrival_history[bssid]) >= 3:
+            # Fallback to smoothed OS arrival deltas if TSF raw is unavailable
+            arrivals = list(self.arrival_history[bssid])
             deltas = [arrivals[i] - arrivals[i-1] for i in range(1, len(arrivals))]
-            jitter = round(float(np.std(deltas) * 10.0), 2)
-        else:
-            jitter = 0.0
+            jitter = round(float(np.median(deltas) * 5.0), 2)
 
         entropy = calculate_shannon_entropy(self.seq_history[bssid])
+
         
         if mean_rssi is not None:
             rssi_diff = round(float(abs(rssi - mean_rssi)), 2)
