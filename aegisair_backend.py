@@ -171,15 +171,18 @@ class AegisAirDaemon:
             "-e", "wlan.bssid",
             "-e", "wlan_radio.signal_dbm",
             "-e", "wlan.seq",
-            "-e", "wlan_mgt.fixed.timestamp"
+            "-e", "wlan.fixed.timestamp"
         ]
         
         try:
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
             
             # Check immediately if it failed to start (e.g. permission denied)
-            time.sleep(1)
+            time.sleep(1.5)
             if process.poll() is not None:
+                err_out = process.stderr.read()
+                print(f"[!] tshark process exited prematurely. Exit code: {process.returncode}")
+                print(f"[!] tshark stderr: {err_out.strip()}")
                 return False
                 
             frame_seq = 1000
