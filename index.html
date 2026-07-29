@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AegisAir — Pre-Connection Wireless Threat Intelligence Radar</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="shield-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>AEGISAIR <span class="badge-tag">v2.0</span></h1>
+          <p>Pre-Connection Layer 2 Wireless Security Agent</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <div class="status-indicator">
+          <span class="pulse-dot"></span>
+          <span class="status-text">AIRSPACE SCAN ACTIVE</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- KPI Grid -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon icon-blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h.01"/>
+            <path d="M2 8.82a15 15 0 0 1 20 0"/>
+            <path d="M5 12.85a10 10 0 0 1 14 0"/>
+            <path d="M8.5 16.88a5 5 0 0 1 7 0"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-title">TOTAL BEACONS</span>
+          <h2 id="kpi-total-packets">0</h2>
+          <span class="kpi-sub">802.11 Management</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon icon-green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <polyline points="9 12 11 14 15 10"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-title">VERIFIED SAFE</span>
+          <h2 id="kpi-safe-aps" class="text-green">0</h2>
+          <span class="kpi-sub">Trusted APs</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon icon-amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-title">DoS / INJECTION</span>
+          <h2 id="kpi-dos-alerts" class="text-amber">0</h2>
+          <span class="kpi-sub">Layer 2 Anomaly</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon icon-red">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-title">EVIL TWIN BANNED</span>
+          <h2 id="kpi-threats-banned" class="text-red">0</h2>
+          <span class="kpi-sub">Auto Block Enforced</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Grid -->
+    <div class="main-content-grid">
+      <!-- Radar Section -->
+      <div class="radar-panel">
+        <div class="panel-header">
+          <h3>AIRSPACE SCANNER RADAR</h3>
+          <span class="latency-pill">Latency: <span id="radar-latency">0.82 ms</span></span>
+        </div>
+
+        <!-- DIRECTION HEADING VECTOR BAR -->
+        <div class="heading-bar" id="heading-bar">
+          <div class="heading-info">
+            <span class="heading-title">DYNAMIC MOVEMENT VECTOR:</span>
+            <span class="heading-val" id="heading-val">STATIONARY (MOVE DEVICE TO VECTOR)</span>
+          </div>
+          <div class="heading-dist">EST. DISTANCE: <span id="heading-dist-val">2.8 M</span></div>
+        </div>
+
+        <div class="radar-container">
+          <div class="radar-sweep"></div>
+          <div class="radar-ring ring-1"></div>
+          <div class="radar-ring ring-2"></div>
+          <div class="radar-ring ring-3"></div>
+          <div class="radar-axis axis-x"></div>
+          <div class="radar-axis axis-y"></div>
+          
+          <div class="radar-center">
+            <span class="radar-center-dot"></span>
+            <span class="radar-center-label">CLIENT</span>
+          </div>
+
+          <div id="radar-blips-layer"></div>
+        </div>
+
+        <div class="radar-legend">
+          <span class="legend-item"><span class="dot green"></span> Safe AP</span>
+          <span class="legend-item"><span class="dot amber"></span> DoS Alert</span>
+          <span class="legend-item"><span class="dot red"></span> Rogue AP</span>
+        </div>
+      </div>
+
+      <!-- Enforcement Section -->
+      <div class="enforcement-panel">
+        <div class="panel-header">
+          <h3>AUTOMATED OS MITIGATION</h3>
+          <span class="tag-live">PRE-CONNECTION</span>
+        </div>
+
+        <div class="enforcement-body">
+          <div class="active-threat-card" id="active-threat-display">
+            <div class="threat-header">
+              <svg class="icon-svg-red" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span class="threat-title">AIRSPACE ENGINE STATUS</span>
+            </div>
+            <p class="threat-desc" id="threat-status-msg">Monitoring 802.11 Beacon Frames... Airspace Status Normal.</p>
+            <div class="cmd-box" id="cmd-box" style="display:none;">
+              <code>nmcli device wifi block bssid --</code>
+              <button class="btn-exec" id="btn-force-exec">Enforce OS Ban Now</button>
+            </div>
+          </div>
+
+          <div class="feed-title">EVENT LOG FEED</div>
+          <div class="threat-feed-scroll" id="threat-feed-container">
+            <!-- Feed Items -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Section -->
+    <section class="table-panel">
+      <div class="panel-header">
+        <h3>AIRSPACE BEACON INSPECTION TABLE <span class="sub-hint">(Click any row to view full AP parameters & vector heading)</span></h3>
+        <span class="table-count" id="table-row-count">0 AP Beacons Scanned</span>
+      </div>
+      <div class="table-wrapper">
+        <table class="airspace-table">
+          <thead>
+            <tr>
+              <th>Frame #</th>
+              <th>SSID</th>
+              <th>BSSID (MAC)</th>
+              <th>RSSI</th>
+              <th>Clock Skew ($\theta$)</th>
+              <th>Seq Entropy</th>
+              <th>Threat Score</th>
+              <th>Verdict</th>
+              <th>OS Ban Command</th>
+            </tr>
+          </thead>
+          <tbody id="airspace-tbody">
+            <tr class="empty-row">
+              <td colspan="9">Listening for 802.11 Management Beacon Frames...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- AP PARAMETER DETAIL MODAL -->
+  <div id="detail-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 id="modal-ssid">SSID Name</h2>
+          <span id="modal-bssid" class="modal-bssid">00:00:00:00:00:00</span>
+        </div>
+        <button id="modal-close-btn" class="modal-close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-verdict-box" id="modal-verdict-box">
+          <span class="verdict-label">SECURITY VERDICT:</span>
+          <span id="modal-verdict" class="verdict-value">SAFE</span>
+        </div>
+
+        <div class="modal-grid">
+          <div class="metric-item">
+            <span class="m-title">RSSI SIGNAL</span>
+            <span id="modal-rssi" class="m-val">-65 dBm</span>
+            <span class="m-sub" id="modal-rssi-trend">Signal Trend: Stable</span>
+          </div>
+
+          <div class="metric-item">
+            <span class="m-title">ESTIMATED DISTANCE</span>
+            <span id="modal-dist-est" class="m-val">2.8 M</span>
+            <span class="m-sub">Physical Attenuation</span>
+          </div>
+
+          <div class="metric-item">
+            <span class="m-title">CLOCK SKEW ($\theta$)</span>
+            <span id="modal-skew" class="m-val">12.45 ppm</span>
+            <span class="m-sub">TSF Microsecond Drift</span>
+          </div>
+
+          <div class="metric-item">
+            <span class="m-title">BEACON JITTER ($\sigma^2$)</span>
+            <span id="modal-jitter" class="m-val">0.12</span>
+            <span class="m-sub">OS Timing Variance</span>
+          </div>
+
+          <div class="metric-item">
+            <span class="m-title">SEQ ENTROPY</span>
+            <span id="modal-entropy" class="m-val">0.08</span>
+            <span class="m-sub">Shannon Discontinuity</span>
+          </div>
+
+          <div class="metric-item">
+            <span class="m-title">HEADING VECTOR</span>
+            <span id="modal-heading-vector" class="m-val">45° Vector</span>
+            <span class="m-sub">Direction Angle</span>
+          </div>
+        </div>
+
+        <div class="modal-score-section">
+          <div class="score-header">
+            <span>ONNX RANDOM FOREST THREAT SCORE</span>
+            <span id="modal-score-pct" class="score-num">4.0%</span>
+          </div>
+          <div class="score-bar-bg">
+            <div id="modal-score-bar" class="score-bar-fill" style="width: 4%;"></div>
+          </div>
+        </div>
+
+        <div class="modal-cmd-section">
+          <span class="cmd-label">AUTOMATED OS BAN COMMAND:</span>
+          <code id="modal-cmd-text">nmcli device wifi block bssid 00:00:00:00:00:00</code>
+          <button id="modal-btn-ban" class="btn-modal-ban">Execute OS Ban</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

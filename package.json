@@ -1,0 +1,23 @@
+{
+  "name": "aegisair-radar",
+  "version": "2.0.0",
+  "description": "AegisAir - AI-Powered Pre-Connection Wireless Threat Intelligence Agent",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "keywords": [
+    "evil-twin",
+    "pre-connection",
+    "wireless-security",
+    "gemastik",
+    "aegisair",
+    "onnx-ai"
+  ],
+  "author": "AegisAir Team - GEMASTIK Software Development",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.3.3"
+  }
+}
