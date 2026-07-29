@@ -145,6 +145,10 @@ class AegisAirDaemon:
             now_t = time.time()
             airspace_mean_rssi = float(np.mean([n["rssi"] for n in live_targets])) if live_targets else -70.0
 
+            # Smooth out emission to prevent stutter/bursting in UI
+            target_count = len(live_targets)
+            smooth_sleep = 2.0 / target_count if target_count > 0 else 1.0
+
             for net in live_targets:
                 frame_seq += 1
                 ssid = net["ssid"]
@@ -155,7 +159,7 @@ class AegisAirDaemon:
                 seq_val = net.get("seq", 0)
 
                 self._generate_event(frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=airspace_mean_rssi)
-                time.sleep(0.01) # Small sleep to prevent CPU spike during JSON burst
+                time.sleep(smooth_sleep)
             
             time.sleep(interval_sec)
 
