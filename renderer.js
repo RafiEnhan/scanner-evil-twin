@@ -46,8 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const ssidDataMap = new Map(); // Store by SSID to strictly prevent duplicate blips for normal APs
   const rssiHistoryMap = new Map();
 
-  if (window.aegisairAPI) {
-    window.aegisairAPI.onBackendEvent((event) => {
+  if (window.purifierAPI) {
+    window.purifierAPI.onBackendEvent((event) => {
       if (event.type === 'BEACON_EVENT') {
         processBeaconEvent(event.data);
       }
@@ -150,15 +150,15 @@ document.addEventListener('DOMContentLoaded', () => {
       activeBanSsid = data.ssid;
       activeBanBssid = data.bssid;
 
-      if (window.aegisairAPI && data.os_ban_cmd && !data.os_ban_cmd.startsWith('N/A')) {
-        window.aegisairAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid });
+      if (window.purifierAPI && data.os_ban_cmd && !data.os_ban_cmd.startsWith('N/A')) {
+        window.purifierAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid });
       }
     }
   }
 
   btnForceExec.addEventListener('click', () => {
-    if (activeBanCmd && window.aegisairAPI) {
-      window.aegisairAPI.executeOsBan(activeBanCmd, { ssid: activeBanSsid, bssid: activeBanBssid }).then(res => {
+    if (activeBanCmd && window.purifierAPI) {
+      window.purifierAPI.executeOsBan(activeBanCmd, { ssid: activeBanSsid, bssid: activeBanBssid }).then(res => {
         alert(res.output || "Enforcement Executed.");
       });
     }
@@ -356,8 +356,8 @@ document.addEventListener('DOMContentLoaded', () => {
     modalCmdText.innerText = data.os_ban_cmd;
 
     modalBtnBan.onclick = () => {
-      if (data.os_ban_cmd && !data.os_ban_cmd.startsWith("N/A") && window.aegisairAPI) {
-        window.aegisairAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid }).then(res => {
+      if (data.os_ban_cmd && !data.os_ban_cmd.startsWith("N/A") && window.purifierAPI) {
+        window.purifierAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid }).then(res => {
           alert(res.output || "Enforcement Command Executed.");
         });
       } else {

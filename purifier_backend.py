@@ -12,7 +12,7 @@ from backend.scanners.tshark_scanner import find_tshark_path, start_tshark_proce
 from backend.scanners.system_profiler_scanner import scan_live_mac_airspace
 
 
-class AegisAirDaemon:
+class PuriFierDaemon:
     def __init__(self):
         self.bssid_history = defaultdict(list)
         self.bssid_tsf = defaultdict(list)
@@ -185,5 +185,5 @@ class AegisAirDaemon:
             time.sleep(interval_sec)
 
 if __name__ == "__main__":
-    daemon = AegisAirDaemon()
+    daemon = PuriFierDaemon()
     daemon.start_stream(interval_sec=0.1)

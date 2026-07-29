@@ -1,7 +1,7 @@
 {
-  "name": "aegisair-radar",
+  "name": "purifier-radar",
   "version": "2.0.0",
-  "description": "AegisAir - AI-Powered Pre-Connection Wireless Threat Intelligence Agent",
+  "description": "PuriFier - AI-Powered Pre-Connection Wireless Threat Intelligence Agent",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -12,10 +12,10 @@
     "pre-connection",
     "wireless-security",
     "gemastik",
-    "aegisair",
+    "purifier",
     "onnx-ai"
   ],
-  "author": "AegisAir Team - GEMASTIK Software Development",
+  "author": "PuriFier Team - GEMASTIK Software Development",
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.3.3"

@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('aegisairAPI', {
+contextBridge.exposeInMainWorld('purifierAPI', {
   onBackendEvent: (callback) => {
     ipcRenderer.on('backend-event', (event, data) => callback(data));
   },

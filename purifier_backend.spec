@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['aegisair_backend.py'],
+    ['purifier_backend.py'],
     pathex=[],
     binaries=[],
-    datas=[('aegisair_rf_model.onnx', '.')],
+    datas=[('purifier_rf_model.onnx', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='aegisair_backend',
+    name='purifier_backend',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -40,5 +40,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='aegisair_backend',
+    name='purifier_backend',
 )

@@ -14,9 +14,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
-DEFAULT_MODEL_JOBLIB = "aegisair_rf_model.joblib"
-DEFAULT_MODEL_PKL = "aegisair_rf_model.pkl"
-DEFAULT_MODEL_ONNX = "aegisair_rf_model.onnx"
+DEFAULT_MODEL_JOBLIB = "purifier_rf_model.joblib"
+DEFAULT_MODEL_PKL = "purifier_rf_model.pkl"
+DEFAULT_MODEL_ONNX = "purifier_rf_model.onnx"
 
 def save_model(model, joblib_path=DEFAULT_MODEL_JOBLIB, pkl_path=DEFAULT_MODEL_PKL, onnx_path=DEFAULT_MODEL_ONNX):
     """
@@ -96,7 +96,7 @@ def load_saved_model(model_path):
 
 def run_train_test_evaluation(dataset_path="dataset_twinevil.csv", nrows=530000, test_size=0.20, random_state=42, load_model_path=None, save_model_files=True, balance_classes=True):
     """
-    AegisAir Machine Learning Train-Test Evaluation Engine
+    PuriFier Machine Learning Train-Test Evaluation Engine
     - Splits AWID dataset into Train Set (80%) and Unseen Test Set (20%).
     - Trains Random Forest Classifier (15 trees, max depth 6) according to agent.md spec (or loads pre-trained model).
     - Evaluates performance metrics (Accuracy, Precision, Recall, Confusion Matrix) on Unseen Test Set.
@@ -190,7 +190,7 @@ def run_train_test_evaluation(dataset_path="dataset_twinevil.csv", nrows=530000,
         if load_model_path:
             print("⚠️ Could not load requested model. Falling back to training new model...")
         # Train Random Forest Classifier ONLY on 80% Train Set
-        print("[*] Training AegisAir Random Forest Classifier (15 trees, max_depth=6, class_weight='balanced')...")
+        print("[*] Training PuriFier Random Forest Classifier (15 trees, max_depth=6, class_weight='balanced')...")
         model = RandomForestClassifier(n_estimators=15, max_depth=6, random_state=random_state, class_weight='balanced')
         model.fit(X_train, y_train)
         
@@ -211,7 +211,7 @@ def run_train_test_evaluation(dataset_path="dataset_twinevil.csv", nrows=530000,
     acc = accuracy_score(y_test, y_pred)
 
     print("\n==========================================================================")
-    print("           AEGISAIR MACHINE LEARNING TRAIN-TEST EVALUATION RESULTS        ")
+    print("           PURIFIER MACHINE LEARNING TRAIN-TEST EVALUATION RESULTS        ")
     print("==========================================================================")
     print(f"🎯 Accuracy Score on Unseen Test Set: {acc * 100:.4f}%\n")
     print("=== CLASSIFICATION REPORT ===")
@@ -227,16 +227,16 @@ def run_train_test_evaluation(dataset_path="dataset_twinevil.csv", nrows=530000,
     df_eval = pd.DataFrame(X_test, columns=col_names)
     df_eval['ground_truth_label'] = np.where(y_test == 1, 'impersonation', 'normal')
     df_eval['onnx_threat_score'] = y_prob
-    df_eval['aegisair_verdict'] = np.where(y_pred == 1, "🚨 RED: THREAT DETECTED (AUTO-CONNECT BAN ENFORCED)", "🟢 GREEN: VERIFIED SAFE AP")
+    df_eval['purifier_verdict'] = np.where(y_pred == 1, "🚨 RED: THREAT DETECTED (AUTO-CONNECT BAN ENFORCED)", "🟢 GREEN: VERIFIED SAFE AP")
     
-    out_csv = "AegisAir_Train_Test_Evaluation_Report.csv"
+    out_csv = "PuriFier_Train_Test_Evaluation_Report.csv"
     df_eval.to_csv(out_csv, index=False)
     print(f"📁 Evaluation Report Saved: '{out_csv}'\n")
 
     return df_eval
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="AegisAir Train-Test ML Evaluator")
+    parser = argparse.ArgumentParser(description="PuriFier Train-Test ML Evaluator")
     parser.add_argument("--dataset", type=str, default="dataset_twinevil.csv", help="Path to dataset CSV file")
     parser.add_argument("--nrows", type=int, default=530000, help="Number of rows to load")
     parser.add_argument("--split", type=float, default=0.20, help="Test set split ratio (e.g. 0.20 for 80/20)")
