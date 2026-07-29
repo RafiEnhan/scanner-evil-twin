@@ -182,6 +182,7 @@
               <th>SSID</th>
               <th>BSSID (MAC)</th>
               <th>RSSI</th>
+              <th>Seq Ctrl (SC)</th>
               <th>Clock Skew (θ)</th>
               <th>Seq Entropy</th>
               <th>Threat Score</th>
@@ -191,7 +192,7 @@
           </thead>
           <tbody id="airspace-tbody">
             <tr class="empty-row">
-              <td colspan="9">Listening for 802.11 Management Beacon Frames...</td>
+              <td colspan="10">Listening for 802.11 Management Beacon Frames...</td>
             </tr>
           </tbody>
         </table>
@@ -230,6 +231,12 @@
           </div>
 
           <div class="metric-item">
+            <span class="m-title">SEQUENCE CONTROL (SC)</span>
+            <span id="modal-seq-ctrl" class="m-val">N/A</span>
+            <span class="m-sub">TShark Hardware Counter</span>
+          </div>
+
+          <div class="metric-item">
             <span class="m-title">CLOCK SKEW (θ)</span>
             <span id="modal-skew" class="m-val">12.45 ppm</span>
             <span class="m-sub">TSF Microsecond Drift</span>
@@ -253,6 +260,7 @@
             <span class="m-sub">Direction Angle</span>
           </div>
         </div>
+
 
         <div class="modal-score-section">
           <div class="score-header">

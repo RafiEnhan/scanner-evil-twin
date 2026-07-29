@@ -1,6 +1,7 @@
 import sys
 import json
 import time
+import threading
 import numpy as np
 from collections import defaultdict, deque
 
@@ -9,6 +10,7 @@ from backend.models.rf_onnx import load_trained_model
 from backend.core.features import calculate_shannon_entropy, calculate_clock_skew, calculate_tsf_jitter
 from backend.scanners.tshark_scanner import find_tshark_path, start_tshark_process
 from backend.scanners.system_profiler_scanner import scan_live_mac_airspace
+
 
 class AegisAirDaemon:
     def __init__(self):
@@ -24,6 +26,8 @@ class AegisAirDaemon:
         self.tsf_raw_history = defaultdict(lambda: deque(maxlen=20))
         self.seq_history = defaultdict(lambda: deque(maxlen=30))
         self.arrival_history = defaultdict(lambda: deque(maxlen=20))
+        self.real_tshark_sc = {}
+        self.tshark_sc_enricher_started = False
 
     def _generate_event(self, frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=None):
         """Processes a single AP frame/tick, extracts ML features, runs prediction, and emits JSON."""
@@ -34,17 +38,15 @@ class AegisAirDaemon:
         
         skew = calculate_clock_skew(bssid, tsf_val, now_t, self.tsf_history)
         
-        # Calculate Beacon Jitter using AP Hardware TSF (immune to host OS scanning / AWDL delays)
+        # Calculate Beacon Jitter using AP Hardware TSF
         jitter = calculate_tsf_jitter(bssid, tsf_val, self.tsf_raw_history)
         if jitter == 0.05 and len(self.arrival_history[bssid]) >= 3:
-            # Fallback to smoothed OS arrival deltas if TSF raw is unavailable
             arrivals = list(self.arrival_history[bssid])
             deltas = [arrivals[i] - arrivals[i-1] for i in range(1, len(arrivals))]
             jitter = round(float(np.median(deltas) * 5.0), 2)
 
         entropy = calculate_shannon_entropy(self.seq_history[bssid])
 
-        
         if mean_rssi is not None:
             rssi_diff = round(float(abs(rssi - mean_rssi)), 2)
         else:
@@ -74,6 +76,7 @@ class AegisAirDaemon:
                 "ssid": ssid,
                 "bssid": bssid,
                 "rssi": rssi,
+                "sequence_control": seq_val,
                 "clock_skew_ppm": skew,
                 "jitter_variance": jitter,
                 "sequence_entropy": entropy,
@@ -90,65 +93,72 @@ class AegisAirDaemon:
         except Exception as err:
             print(f"[Backend JSON Error]: {err}", file=sys.stderr, flush=True)
 
-    def start_stream(self, interval_sec=0.35):
-        tshark_path = find_tshark_path()
-        if tshark_path:
-            print(f"[*] Found tshark at {tshark_path}. Attempting raw packet capture...", file=sys.stderr)
-            success = self._run_tshark_stream(tshark_path)
-            if success:
-                return
-            print("[!] tshark capture failed (needs root/sudo?). Falling back to system_profiler...", file=sys.stderr)
-        else:
-            print("[!] tshark not found. Using system_profiler simulation mode...", file=sys.stderr)
+
+    def _start_background_tshark_sc_enricher(self):
+        """Spawns TShark in a background thread to continuously enrich sequence history (wlan.seq) without blocking main UI scanner."""
+        if self.tshark_sc_enricher_started:
+            return
             
+        tshark_path = find_tshark_path()
+        if not tshark_path:
+            return
+
+        self.tshark_sc_enricher_started = True
+
+        def sc_enricher_worker():
+            try:
+                process = start_tshark_process(tshark_path)
+                if not process:
+                    return
+                print("[*] Background TShark SC Enricher Active (Capturing Real Hardware Packets in background)...", file=sys.stderr)
+                for line in process.stdout:
+                    line_str = line.strip()
+                    if line_str:
+                        parts = line_str.split('\t')
+                        if len(parts) >= 7:
+                            # BSSID can be wlan.bssid (parts[2]) or eth.src (parts[3])
+                            bssid = (parts[2] if parts[2] else parts[3]).strip().lower()
+                            
+                            # Sequence number can be wlan.seq (parts[5]) or ip.id (parts[6])
+                            seq_str = (parts[5] if parts[5] else parts[6]).split(',')[0].strip()
+                            
+                            if bssid and seq_str:
+                                try:
+                                    if seq_str.startswith("0x") or seq_str.startswith("0X"):
+                                        seq_val = int(seq_str, 16) % 4096
+                                    elif seq_str.isdigit():
+                                        seq_val = int(seq_str) % 4096
+                                    else:
+                                        seq_val = None
+                                        
+                                    if seq_val is not None:
+                                        self.real_tshark_sc[bssid] = seq_val
+                                except Exception:
+                                    pass
+            except Exception as e:
+                print(f"[!] Background SC Enricher error: {e}", file=sys.stderr)
+
+
+
+        t = threading.Thread(target=sc_enricher_worker, daemon=True)
+        t.start()
+
+
+    def start_stream(self, interval_sec=0.35):
+        # Native OS Airspace Engine as Primary Driver + Background TShark SC Enricher
+        print("[*] Starting Hybrid Scanner: Native OS Airspace Engine + Background TShark SC Enricher...", file=sys.stderr)
         self._run_system_profiler_stream(interval_sec)
 
-    def _run_tshark_stream(self, tshark_path):
-        process = start_tshark_process(tshark_path)
-        if not process:
-            return False
-            
-        time.sleep(1)
-        if process.poll() is not None:
-            return False
-            
-        frame_seq = 1000
-        engine_name = "tshark 802.11 Raw Packet Sniffer"
-        for line in process.stdout:
-            line = line.strip()
-            if not line:
-                continue
-                
-            parts = line.split('\t')
-            if len(parts) < 6:
-                continue
-                
-            try:
-                ssid = parts[1]
-                bssid = parts[2].lower()
-                rssi = int(parts[3].split(',')[0]) if parts[3] else -70
-                seq_val = int(parts[4].split(',')[0]) if parts[4] else 0
-                tsf_val = int(parts[5].split(',')[0]) if parts[5] else int(time.time() * 1e6)
-            except ValueError:
-                continue
-
-            if not ssid or not bssid:
-                continue
-
-            frame_seq += 1
-            now_t = time.time()
-            self._generate_event(frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine_name)
-            
-        return True
-
     def _run_system_profiler_stream(self, interval_sec=0.4):
+        # Start background TShark SC enricher to continuously capture real wlan.seq
+        self._start_background_tshark_sc_enricher()
+
         frame_seq = 1000
         while True:
             live_targets = scan_live_mac_airspace()
             now_t = time.time()
             airspace_mean_rssi = float(np.mean([n["rssi"] for n in live_targets])) if live_targets else -70.0
 
-            # Smooth out emission to prevent stutter/bursting in UI
             target_count = len(live_targets)
             smooth_sleep = 2.0 / target_count if target_count > 0 else 1.0
 
@@ -157,12 +167,20 @@ class AegisAirDaemon:
                 ssid = net["ssid"]
                 bssid = net["bssid"]
                 rssi = net["rssi"]
-                engine = net.get("engine", "Native OS CoreWLAN Airspace Scanner")
                 tsf_val = net.get("tsf", int(now_t * 1e6))
-                seq_val = net.get("seq", 0)
+
+                # Pure TShark SC values without artificial generator fallback
+                if bssid in self.real_tshark_sc:
+                    seq_val = self.real_tshark_sc.pop(bssid)
+                    engine = f"{net.get('engine', 'Native OS')} + TShark Real SC"
+                else:
+                    seq_val = 0
+                    engine = net.get("engine", "Native OS Airspace Scanner")
 
                 self._generate_event(frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=airspace_mean_rssi)
                 time.sleep(smooth_sleep)
+
+
             
             time.sleep(interval_sec)
 

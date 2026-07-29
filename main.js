@@ -73,7 +73,7 @@ function createWindow() {
   });
 
   pythonProcess.stderr.on('data', (data) => {
-    console.error(`[Python Backend Error]: ${data}`);
+    console.error(`[Python Terminal Message]: ${data}`);
   });
 }
 

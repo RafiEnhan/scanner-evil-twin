@@ -4,16 +4,22 @@ import numpy as np
 from collections import defaultdict
 
 def calculate_shannon_entropy(seq_list):
-    """Calculates Shannon Entropy for sequence control numbers."""
-    if len(seq_list) < 3:
-        return 0.12
+    """Calculates pure Shannon Entropy for sequence control numbers."""
+    if len(seq_list) < 2:
+        return 0.0
     diffs = [(seq_list[i] - seq_list[i-1]) % 4096 for i in range(1, len(seq_list))]
+    if not diffs:
+        return 0.0
     counts = defaultdict(int)
     for d in diffs:
         counts[d] += 1
     probs = [c / len(diffs) for c in counts.values()]
     entropy = -sum(p * math.log2(p) for p in probs if p > 0)
-    return round(float(entropy), 2)
+    res = round(float(entropy), 2)
+    return 0.0 if abs(res) < 1e-6 else res
+
+
+
 
 def calculate_clock_skew(bssid, tsf_val, current_time, tsf_history):
     """Calculates hardware Clock Skew (PPM) using TSF timestamps."""

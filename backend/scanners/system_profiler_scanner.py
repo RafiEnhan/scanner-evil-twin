@@ -48,7 +48,34 @@ def scan_live_mac_airspace():
                         current_net["channel"] = parts[1].strip()
         except Exception:
             pass
+    elif sys.platform.startswith("linux"):
+        try:
+            res = subprocess.run(["nmcli", "-t", "-f", "SSID,BSSID,SIGNAL,CHAN", "device", "wifi", "list"], capture_output=True, text=True, timeout=5, encoding='utf-8', errors='ignore')
+            lines = res.stdout.split('\n')
+            for line in lines:
+                s = line.strip()
+                if not s:
+                    continue
+                parts = s.split(':')
+                if len(parts) >= 4:
+                    ssid = parts[0].strip() or "Hidden Network"
+                    bssid = ":".join(parts[1:7]).strip().lower() if len(parts) >= 7 else parts[1].strip().lower()
+                    try:
+                        sig_pct = int(parts[-2].strip())
+                        rssi_val = int((sig_pct / 2.0) - 100)
+                    except Exception:
+                        rssi_val = -70
+                    chan = parts[-1].strip()
+                    raw_networks.append({
+                        "ssid": ssid,
+                        "bssid": bssid,
+                        "rssi": rssi_val,
+                        "channel": chan
+                    })
+        except Exception:
+            pass
     else:
+        # macOS CoreWLAN system_profiler
         try:
             res = subprocess.run(["system_profiler", "SPAirPortDataType"], capture_output=True, text=True, timeout=5)
             lines = res.stdout.split('\n')
@@ -78,6 +105,7 @@ def scan_live_mac_airspace():
                         current_net["channel"] = v.split(' ')[0]
         except Exception:
             pass
+
 
     sorted_networks = sorted(raw_networks, key=lambda x: (x.get("ssid", ""), -x.get("rssi", -100)))
     ssid_counters = defaultdict(int)
