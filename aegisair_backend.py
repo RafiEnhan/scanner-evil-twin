@@ -311,23 +311,13 @@ class AegisAirDaemon:
             cnt = ssid_counters[ssid]
             
             if "bssid" not in net or not net["bssid"]:
-                h = hashlib.md5(f"{ssid}_ap_{cnt}".encode('utf-8')).hexdigest()
-                bssid = f"{h[0:2]}:{h[2:4]}:{h[4:6]}:{h[6:8]}:{h[8:10]}:{h[10:12]}"
-                net["bssid"] = bssid
+                net["bssid"] = "00:00:00:00:00:00"
             else:
                 net["bssid"] = net["bssid"].lower()
-            net["tsf"] = int(time.time() * 1e6)
             
-            if bssid not in self.seq_trackers:
-                h_seq = int(hashlib.md5(f"seq_{bssid}".encode('utf-8')).hexdigest()[:4], 16)
-                self.seq_trackers[bssid] = (h_seq % 3000) + 100
-            else:
-                tick_hash = int(hashlib.md5(f"{bssid}_{time.time():.1f}".encode('utf-8')).hexdigest()[:2], 16)
-                step = 1 if (tick_hash % 5) != 0 else 2
-                self.seq_trackers[bssid] = (self.seq_trackers[bssid] + step) % 4096
-
-            net["seq"] = self.seq_trackers[bssid]
-            net["engine"] = "CoreWLAN (macOS System Profiler)"
+            net["tsf"] = int(time.time() * 1e6)
+            net["seq"] = 0
+            net["engine"] = "CoreWLAN (macOS System Profiler - No Raw MAC Data)"
             targets.append(net)
 
         return targets
@@ -352,7 +342,7 @@ class AegisAirDaemon:
                 engine = net.get("engine", "Native OS CoreWLAN Airspace Scanner")
 
                 tsf_val = net.get("tsf", int(now_t * 1e6))
-                seq_val = net.get("seq", 100)
+                seq_val = net.get("seq", 0)
 
                 self.seq_history[bssid].append(seq_val)
                 high_res_now = time.perf_counter()
@@ -363,17 +353,13 @@ class AegisAirDaemon:
                 arrivals = list(self.arrival_history[bssid])
                 if len(arrivals) >= 3:
                     deltas = [arrivals[i] - arrivals[i-1] for i in range(1, len(arrivals))]
-                    base_jit = float(np.std(deltas) * 10.0)
-                    h_jit = (int(hashlib.md5(f"{bssid}_{frame_seq}".encode('utf-8')).hexdigest()[:2], 16) % 15) / 100.0
-                    jitter = round(abs(base_jit + h_jit), 2)
+                    jitter = round(float(np.std(deltas) * 10.0), 2)
                 else:
-                    h_jit = int(hashlib.md5(f"jitter_{bssid}".encode('utf-8')).hexdigest()[:4], 16)
-                    jitter = round(0.10 + (h_jit % 30) / 100.0, 2)
+                    jitter = 0.0
 
                 entropy = self.calculate_shannon_entropy(self.seq_history[bssid])
                 
-                rssi_fluct = ((int(hashlib.md5(f"{bssid}_{frame_seq}".encode('utf-8')).hexdigest()[:2], 16) % 3) - 1)
-                rssi_diff = round(float(abs((rssi + rssi_fluct) - airspace_mean_rssi)), 2)
+                rssi_diff = round(float(abs(rssi - airspace_mean_rssi)), 2)
 
                 feats = np.array([[skew, jitter, entropy, rssi_diff]])
                 threat_score = round(float(self.model.predict_proba(feats)[0][1]), 4)
