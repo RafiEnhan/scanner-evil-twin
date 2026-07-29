@@ -161,4 +161,4 @@ class AegisAirDaemon:
 
 if __name__ == "__main__":
     daemon = AegisAirDaemon()
-    daemon.start_stream(interval_sec=0.35)
+    daemon.start_stream(interval_sec=0.1)
