@@ -311,7 +311,9 @@ class AegisAirDaemon:
             cnt = ssid_counters[ssid]
             
             if "bssid" not in net or not net["bssid"]:
-                net["bssid"] = "00:00:00:00:00:00"
+                h = hashlib.md5(f"{ssid}_ap_{cnt}".encode('utf-8')).hexdigest()
+                bssid = f"{h[0:2]}:{h[2:4]}:{h[4:6]}:{h[6:8]}:{h[8:10]}:{h[10:12]}"
+                net["bssid"] = bssid
             else:
                 net["bssid"] = net["bssid"].lower()
             
