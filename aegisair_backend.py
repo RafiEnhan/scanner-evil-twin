@@ -46,35 +46,12 @@ class AegisAirDaemon:
         self.bssid_history = defaultdict(list)
         self.bssid_tsf = defaultdict(list)
         self.model = None
-        self.tshark_path = self._find_tshark_path()
         
         # Microsecond TSF Clock Skew & Sequence Tracker Maps
         self.tsf_history = defaultdict(lambda: deque(maxlen=20))
         self.seq_history = defaultdict(lambda: deque(maxlen=30))
         
         self._init_trained_model()
-
-    def _find_tshark_path(self):
-        for path in ["/Applications/Wireshark.app/Contents/MacOS/tshark", "/usr/local/bin/tshark", "/usr/bin/tshark"]:
-            if os.path.exists(path):
-                return path
-        try:
-            res = subprocess.run(["which", "tshark"], capture_output=True, text=True)
-            if res.returncode == 0 and res.stdout.strip():
-                p = res.stdout.strip()
-                if os.path.exists(p):
-                    return p
-        except Exception:
-            pass
-        if sys.platform == "darwin":
-            ws_app = "/Applications/Wireshark.app/Contents/MacOS"
-            if os.path.exists(ws_app):
-                for f in os.listdir(ws_app):
-                    if f.lower() == "tshark":
-                        path = os.path.join(ws_app, f)
-                        if os.path.exists(path):
-                            return path
-        return None
 
     def _init_trained_model(self):
         base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -221,7 +198,7 @@ class AegisAirDaemon:
                 ssid = net["ssid"]
                 bssid = net["bssid"]
                 rssi = net["rssi"]
-                engine = net.get("engine", "TShark (Bundled Binary)")
+                engine = net.get("engine", "Native OS CoreWLAN Airspace Scanner")
 
                 tsf_val = net.get("tsf", int(now_t * 1e6))
                 seq_val = net.get("seq", 100)

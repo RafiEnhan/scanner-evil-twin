@@ -23,3 +23,7 @@ dist/
 build/
 *.app/
 AegisAir-Radar-darwin-arm64/
+
+# Large Datasets (>100MB)
+dataset/1
+
