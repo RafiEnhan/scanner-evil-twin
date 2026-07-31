@@ -34,18 +34,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalSkew = document.getElementById('modal-skew');
   const modalJitter = document.getElementById('modal-jitter');
   const modalEntropy = document.getElementById('modal-entropy');
+  const modalSeqCtrl = document.getElementById('modal-seq-ctrl');
   const modalScorePct = document.getElementById('modal-score-pct');
   const modalScoreBar = document.getElementById('modal-score-bar');
   const modalCmdText = document.getElementById('modal-cmd-text');
   const modalBtnBan = document.getElementById('modal-btn-ban');
+
 
   let activeBanCmd = "";
   const trackedBlips = new Map();
   const ssidDataMap = new Map(); // Store by SSID to strictly prevent duplicate blips for normal APs
   const rssiHistoryMap = new Map();
 
-  if (window.aegisairAPI) {
-    window.aegisairAPI.onBackendEvent((event) => {
+  if (window.purifierAPI) {
+    window.purifierAPI.onBackendEvent((event) => {
       if (event.type === 'BEACON_EVENT') {
         processBeaconEvent(event.data);
       }
@@ -105,18 +107,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isRed) tagClass = 'red';
 
     const cleanVerdict = data.verdict.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+    const scDisplay = (data.sequence_control !== undefined && data.sequence_control > 0) ? data.sequence_control : 'N/A';
 
     tr.innerHTML = `
       <td>#${data.frame_number}</td>
       <td><strong>${escapeHtml(data.ssid)}</strong></td>
       <td><code>${data.bssid}</code></td>
       <td>${data.rssi} dBm</td>
+      <td><code>${scDisplay}</code></td>
       <td>${data.clock_skew_ppm} ppm</td>
       <td>${data.sequence_entropy}</td>
       <td><strong>${(data.threat_score * 100).toFixed(1)}%</strong></td>
       <td><span class="verdict-tag ${tagClass}">${escapeHtml(cleanVerdict)}</span></td>
       <td><code>${escapeHtml(data.os_ban_cmd)}</code></td>
     `;
+
 
     tr.addEventListener('click', () => {
       openApDetailModal(data);
@@ -145,15 +150,15 @@ document.addEventListener('DOMContentLoaded', () => {
       activeBanSsid = data.ssid;
       activeBanBssid = data.bssid;
 
-      if (window.aegisairAPI && data.os_ban_cmd && !data.os_ban_cmd.startsWith('N/A')) {
-        window.aegisairAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid });
+      if (window.purifierAPI && data.os_ban_cmd && !data.os_ban_cmd.startsWith('N/A')) {
+        window.purifierAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid });
       }
     }
   }
 
   btnForceExec.addEventListener('click', () => {
-    if (activeBanCmd && window.aegisairAPI) {
-      window.aegisairAPI.executeOsBan(activeBanCmd, { ssid: activeBanSsid, bssid: activeBanBssid }).then(res => {
+    if (activeBanCmd && window.purifierAPI) {
+      window.purifierAPI.executeOsBan(activeBanCmd, { ssid: activeBanSsid, bssid: activeBanBssid }).then(res => {
         alert(res.output || "Enforcement Executed.");
       });
     }
@@ -322,6 +327,10 @@ document.addEventListener('DOMContentLoaded', () => {
     modalSkew.innerText = `${data.clock_skew_ppm} ppm`;
     modalJitter.innerText = `${data.jitter_variance}`;
     modalEntropy.innerText = `${data.sequence_entropy}`;
+    if (modalSeqCtrl) {
+      modalSeqCtrl.innerText = (data.sequence_control !== undefined && data.sequence_control > 0) ? data.sequence_control : 'N/A';
+    }
+
     
     const pct = (data.threat_score * 100).toFixed(1);
     modalScorePct.innerText = `${pct}%`;
@@ -347,8 +356,8 @@ document.addEventListener('DOMContentLoaded', () => {
     modalCmdText.innerText = data.os_ban_cmd;
 
     modalBtnBan.onclick = () => {
-      if (data.os_ban_cmd && !data.os_ban_cmd.startsWith("N/A") && window.aegisairAPI) {
-        window.aegisairAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid }).then(res => {
+      if (data.os_ban_cmd && !data.os_ban_cmd.startsWith("N/A") && window.purifierAPI) {
+        window.purifierAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid }).then(res => {
           alert(res.output || "Enforcement Command Executed.");
         });
       } else {

@@ -11,7 +11,7 @@ function createWindow() {
     height: 820,
     minWidth: 1024,
     minHeight: 720,
-    title: "AegisAir — Pre-Connection Wireless Threat Intelligence",
+    title: "PuriFier — Pre-Connection Wireless Threat Intelligence",
     backgroundColor: '#090c10',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -38,8 +38,8 @@ function createWindow() {
     return 'python3';
   }
 
-  const standaloneBackendExe = path.join(__dirname, 'dist', 'aegisair_backend', 'aegisair_backend');
-  const standaloneBackendOneFile = path.join(__dirname, 'dist', 'aegisair_backend');
+  const standaloneBackendExe = path.join(__dirname, 'dist', 'purifier_backend', 'purifier_backend');
+  const standaloneBackendOneFile = path.join(__dirname, 'dist', 'purifier_backend');
 
   if (fs.existsSync(standaloneBackendExe)) {
     console.log("[*] 🚀 Spawning PyInstaller --onedir backend binary:", standaloneBackendExe);
@@ -49,7 +49,7 @@ function createWindow() {
     pythonProcess = spawn(standaloneBackendOneFile, []);
   } else {
     const pythonExecutable = findPython3();
-    const backendScript = path.join(__dirname, 'aegisair_backend.py');
+    const backendScript = path.join(__dirname, 'purifier_backend.py');
     const customEnv = Object.assign({}, process.env, {
       PATH: `/Library/Frameworks/Python.framework/Versions/3.11/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:${process.env.PATH || ''}`
     });
@@ -73,7 +73,7 @@ function createWindow() {
   });
 
   pythonProcess.stderr.on('data', (data) => {
-    console.error(`[Python Backend Error]: ${data}`);
+    console.error(`[Python Terminal Message]: ${data}`);
   });
 }
 
@@ -90,7 +90,7 @@ function killPythonAndQuit() {
     try { pythonProcess.kill('SIGKILL'); } catch (e) {}
   }
   try {
-    exec("pkill -f aegisair_backend.py", () => {});
+    exec("pkill -f purifier_backend.py", () => {});
   } catch (e) {}
 }
 

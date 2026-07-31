@@ -34,11 +34,11 @@ def load_trained_model():
     """Locates and loads the ONNX or Joblib ML model from expected paths."""
     base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     candidate_paths = [
-        "aegisair_rf_model.onnx",
-        os.path.join(base_dir, "aegisair_rf_model.onnx"),
-        os.path.join(os.path.dirname(base_dir), "aegisair_rf_model.onnx"),
-        "aegisair_rf_model.joblib",
-        "aegisair_rf_model.pkl"
+        "purifier_rf_model.onnx",
+        os.path.join(base_dir, "purifier_rf_model.onnx"),
+        os.path.join(os.path.dirname(base_dir), "purifier_rf_model.onnx"),
+        "purifier_rf_model.joblib",
+        "purifier_rf_model.pkl"
     ]
     for model_path in candidate_paths:
         if os.path.exists(model_path):
@@ -58,4 +58,4 @@ def load_trained_model():
             except Exception as e:
                 print(f"Failed to load '{model_path}': {e}", file=sys.stderr)
 
-    raise RuntimeError("Error: ONNX model file 'aegisair_rf_model.onnx' not found.")
+    raise RuntimeError("Error: ONNX model file 'purifier_rf_model.onnx' not found.")
