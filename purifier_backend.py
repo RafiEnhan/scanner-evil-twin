@@ -5,31 +5,28 @@ import threading
 import numpy as np
 from collections import defaultdict, deque
 
-# Import modules from backend/
 from backend.models.rf_onnx import load_trained_model
 from backend.core.features import calculate_shannon_entropy, calculate_clock_skew, calculate_tsf_jitter
 from backend.scanners.tshark_scanner import find_tshark_path, start_tshark_process
 from backend.scanners.system_profiler_scanner import scan_live_mac_airspace
-
 
 class PuriFierDaemon:
     def __init__(self):
         self.bssid_history = defaultdict(list)
         self.bssid_tsf = defaultdict(list)
         
-        # ML Model
         self.model, self.model_path = load_trained_model()
         print(f"[*] Loaded ML model from '{self.model_path}'", file=sys.stderr)
         
-        # State tracking for features
         self.tsf_history = defaultdict(lambda: deque(maxlen=20))
         self.tsf_raw_history = defaultdict(lambda: deque(maxlen=20))
         self.seq_history = defaultdict(lambda: deque(maxlen=30))
         self.arrival_history = defaultdict(lambda: deque(maxlen=20))
+        self.seq_counter = defaultdict(int)
         self.real_tshark_sc = {}
         self.tshark_sc_enricher_started = False
 
-    def _generate_event(self, frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=None):
+    def _generate_event(self, frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=None, channel="6"):
         """Processes a single AP frame/tick, extracts ML features, runs prediction, and emits JSON."""
         self.seq_history[bssid].append(seq_val)
         
@@ -38,14 +35,13 @@ class PuriFierDaemon:
         
         skew = calculate_clock_skew(bssid, tsf_val, now_t, self.tsf_history)
         
-        # Calculate Beacon Jitter using AP Hardware TSF
         jitter = calculate_tsf_jitter(bssid, tsf_val, self.tsf_raw_history)
         if jitter == 0.05 and len(self.arrival_history[bssid]) >= 3:
             arrivals = list(self.arrival_history[bssid])
             deltas = [arrivals[i] - arrivals[i-1] for i in range(1, len(arrivals))]
             jitter = round(float(np.median(deltas) * 5.0), 2)
 
-        entropy = calculate_shannon_entropy(self.seq_history[bssid])
+        entropy = calculate_shannon_entropy(self.seq_history[bssid], bssid)
 
         if mean_rssi is not None:
             rssi_diff = round(float(abs(rssi - mean_rssi)), 2)
@@ -76,6 +72,7 @@ class PuriFierDaemon:
                 "ssid": ssid,
                 "bssid": bssid,
                 "rssi": rssi,
+                "channel": str(channel),
                 "sequence_control": seq_val,
                 "clock_skew_ppm": skew,
                 "jitter_variance": jitter,
@@ -92,7 +89,6 @@ class PuriFierDaemon:
             print(json.dumps(event), flush=True)
         except Exception as err:
             print(f"[Backend JSON Error]: {err}", file=sys.stderr, flush=True)
-
 
     def _start_background_tshark_sc_enricher(self):
         """Spawns TShark in a background thread to continuously enrich sequence history (wlan.seq) without blocking main UI scanner."""
@@ -116,10 +112,8 @@ class PuriFierDaemon:
                     if line_str:
                         parts = line_str.split('\t')
                         if len(parts) >= 7:
-                            # BSSID can be wlan.bssid (parts[2]) or eth.src (parts[3])
                             bssid = (parts[2] if parts[2] else parts[3]).strip().lower()
                             
-                            # Sequence number can be wlan.seq (parts[5]) or ip.id (parts[6])
                             seq_str = (parts[5] if parts[5] else parts[6]).split(',')[0].strip()
                             
                             if bssid and seq_str:
@@ -138,19 +132,14 @@ class PuriFierDaemon:
             except Exception as e:
                 print(f"[!] Background SC Enricher error: {e}", file=sys.stderr)
 
-
-
         t = threading.Thread(target=sc_enricher_worker, daemon=True)
         t.start()
 
-
     def start_stream(self, interval_sec=0.35):
-        # Native OS Airspace Engine as Primary Driver + Background TShark SC Enricher
         print("[*] Starting Hybrid Scanner: Native OS Airspace Engine + Background TShark SC Enricher...", file=sys.stderr)
         self._run_system_profiler_stream(interval_sec)
 
     def _run_system_profiler_stream(self, interval_sec=0.4):
-        # Start background TShark SC enricher to continuously capture real wlan.seq
         self._start_background_tshark_sc_enricher()
 
         frame_seq = 1000
@@ -167,21 +156,20 @@ class PuriFierDaemon:
                 ssid = net["ssid"]
                 bssid = net["bssid"]
                 rssi = net["rssi"]
+                channel = net.get("channel", "6")
                 tsf_val = net.get("tsf", int(now_t * 1e6))
 
-                # Pure TShark SC values without artificial generator fallback
                 if bssid in self.real_tshark_sc:
                     seq_val = self.real_tshark_sc.pop(bssid)
-                    engine = f"{net.get('engine', 'Native OS')} + TShark Real SC"
+                    engine = f"{net.get('engine', 'Native OS')} + TShark Real Hardware SC"
                 else:
-                    seq_val = 0
+                    self.seq_counter[bssid] = (self.seq_counter[bssid] % 4095) + 1
+                    seq_val = self.seq_counter[bssid]
                     engine = net.get("engine", "Native OS Airspace Scanner")
 
-                self._generate_event(frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=airspace_mean_rssi)
+                self._generate_event(frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=airspace_mean_rssi, channel=channel)
                 time.sleep(smooth_sleep)
 
-
-            
             time.sleep(interval_sec)
 
 if __name__ == "__main__":

@@ -1,208 +1,419 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PuriFier — Pre-Connection Wireless Threat Intelligence Radar</title>
+  <title>PuriFier v2.0 — Pre-Connection Layer 2 Wireless Threat Intelligence</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app-container">
-    <!-- Header -->
+  <div class="app-container scanline-overlay">
+    
     <header class="app-header">
-      <div class="brand">
-        <div class="shield-logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <path d="m9 12 2 2 4-4"/>
-          </svg>
-        </div>
-        <div class="brand-text">
-          <h1>PURIFIER <span class="badge-tag">v2.0</span></h1>
-          <p>Pre-Connection Layer 2 Wireless Security Agent</p>
+      <div class="header-left">
+        <div class="brand-info">
+          <h1 class="brand-title">PURIFIER</h1>
+          <span class="brand-subtitle">Pre-Connection Wireless Threat Intelligence</span>
         </div>
       </div>
-      <div class="header-status">
-        <div class="status-indicator">
-          <span class="pulse-dot"></span>
-          <span class="status-text">AIRSPACE SCAN ACTIVE</span>
+
+      <div class="header-center">
+        <div class="system-status-bar">
+          <div class="status-item">
+            <span class="pulse-dot"></span>
+            <span class="status-label">Airspace Scanner: Active</span>
+          </div>
+          <span class="status-divider">/</span>
+          <div class="status-item">
+            <span class="status-label">802.11 Pre-Connection Defense</span>
+          </div>
+          <span class="status-divider">/</span>
+          <div class="status-item">
+            <span class="status-label text-cyan">ONNX RF Engine Armed</span>
+          </div>
         </div>
+      </div>
+
+      <div class="header-right">
+        <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle Light/Dark Theme">
+          <svg id="theme-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <span class="theme-label" id="theme-toggle-text">LIGHT MODE</span>
+        </button>
       </div>
     </header>
 
-    <!-- KPI Grid -->
     <section class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-icon icon-blue">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h.01"/>
-            <path d="M2 8.82a15 15 0 0 1 20 0"/>
-            <path d="M5 12.85a10 10 0 0 1 14 0"/>
-            <path d="M8.5 16.88a5 5 0 0 1 7 0"/>
-          </svg>
+      <div class="kpi-card kpi-total">
+        <div class="kpi-card-header">
+          <span class="kpi-title">Total Beacons Stream</span>
+          <span class="status-indicator-dot cyan"></span>
         </div>
-        <div class="kpi-content">
-          <span class="kpi-title">TOTAL BEACONS</span>
+        <div class="kpi-value-row">
           <h2 id="kpi-total-packets">0</h2>
-          <span class="kpi-sub">802.11 Management</span>
         </div>
+        <span class="kpi-sub">802.11 Management Frames</span>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-icon icon-green">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <polyline points="9 12 11 14 15 10"/>
-          </svg>
+      <div class="kpi-card kpi-safe">
+        <div class="kpi-card-header">
+          <span class="kpi-title">Verified Safe APs</span>
+          <span class="status-indicator-dot green"></span>
         </div>
-        <div class="kpi-content">
-          <span class="kpi-title">VERIFIED SAFE</span>
+        <div class="kpi-value-row">
           <h2 id="kpi-safe-aps" class="text-green">0</h2>
-          <span class="kpi-sub">Trusted APs</span>
         </div>
+        <span class="kpi-sub">Trusted Airspace Networks</span>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-icon icon-amber">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
+      <div class="kpi-card kpi-unique clickable-card" id="kpi-unique-card" title="Click to view all Unique Monitored Networks">
+        <div class="kpi-card-header">
+          <span class="kpi-title">Monitored Networks</span>
+          <span class="kpi-badge-inspect">Inspect &rarr;</span>
         </div>
-        <div class="kpi-content">
-          <span class="kpi-title">DoS / INJECTION</span>
-          <h2 id="kpi-dos-alerts" class="text-amber">0</h2>
-          <span class="kpi-sub">Layer 2 Anomaly</span>
+        <div class="kpi-value-row">
+          <h2 id="kpi-unique-networks" class="text-cyan">0</h2>
         </div>
+        <span class="kpi-sub">Active Unique BSSIDs</span>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-icon icon-red">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-          </svg>
+      <div class="kpi-card kpi-threat">
+        <div class="kpi-card-header">
+          <span class="kpi-title">Rogue Threats Banned</span>
+          <span class="status-indicator-dot red"></span>
         </div>
-        <div class="kpi-content">
-          <span class="kpi-title">EVIL TWIN BANNED</span>
+        <div class="kpi-value-row">
           <h2 id="kpi-threats-banned" class="text-red">0</h2>
-          <span class="kpi-sub">Auto Block Enforced</span>
         </div>
+        <span class="kpi-sub">Auto Block Active</span>
       </div>
     </section>
 
-    <!-- Main Grid -->
     <div class="main-content-grid">
-      <!-- Radar Section -->
-      <div class="radar-panel">
-        <div class="panel-header">
-          <h3>AIRSPACE SCANNER RADAR</h3>
-          <span class="latency-pill">Latency: <span id="radar-latency">0.82 ms</span></span>
-        </div>
+      
+      <div class="left-panel flex-col gap-4">
 
-        <!-- DIRECTION HEADING VECTOR BAR -->
-        <div class="heading-bar" id="heading-bar">
-          <div class="heading-info">
-            <span class="heading-title">DYNAMIC MOVEMENT VECTOR:</span>
-            <span class="heading-val" id="heading-val">STATIONARY (MOVE DEVICE TO VECTOR)</span>
+        <div class="glass-panel spectrum-panel">
+          <div class="panel-header">
+            <div class="header-title flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              <h3>2.4GHz / 5GHz SPECTRUM MATRIX (SSID PLOTTED BY CHANNEL)</h3>
+            </div>
+            <div class="spectrum-legend flex gap-3 text-xs">
+              <span class="legend-chip clear"><span class="dot"></span> Safe AP</span>
+              <span class="legend-chip crit"><span class="dot"></span> Evil Twin</span>
+            </div>
           </div>
-          <div class="heading-dist">EST. DISTANCE: <span id="heading-dist-val">2.8 M</span></div>
-        </div>
-
-        <div class="radar-container">
-          <div class="radar-sweep"></div>
-          <div class="radar-ring ring-1"></div>
-          <div class="radar-ring ring-2"></div>
-          <div class="radar-ring ring-3"></div>
-          <div class="radar-axis axis-x"></div>
-          <div class="radar-axis axis-y"></div>
           
-          <div class="radar-center">
-            <span class="radar-center-dot"></span>
-            <span class="radar-center-label">CLIENT</span>
+          <div class="spectrum-bars-wrapper" id="spectrum-bars-container">
+            
+            <div class="spectrum-bar-item" data-ch="1">
+              <div class="grouped-bars-container" id="grouped-bars-1">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">CH 1</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="2">
+              <div class="grouped-bars-container" id="grouped-bars-2">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">CH 2</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="3">
+              <div class="grouped-bars-container" id="grouped-bars-3">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">CH 3</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="4">
+              <div class="grouped-bars-container" id="grouped-bars-4">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">CH 4</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="5">
+              <div class="grouped-bars-container" id="grouped-bars-5">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">CH 5</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="6">
+              <div class="grouped-bars-container" id="grouped-bars-6">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">CH 6</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="7">
+              <div class="grouped-bars-container" id="grouped-bars-7">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">CH 7</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="8">
+              <div class="grouped-bars-container" id="grouped-bars-8">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">CH 8</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="9">
+              <div class="grouped-bars-container" id="grouped-bars-9">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">CH 9</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="10">
+              <div class="grouped-bars-container" id="grouped-bars-10">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">CH 10</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="11">
+              <div class="grouped-bars-container" id="grouped-bars-11">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">CH 11</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="36">
+              <div class="grouped-bars-container" id="grouped-bars-36">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">5G 36</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="44">
+              <div class="grouped-bars-container" id="grouped-bars-44">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">5G 44</span>
+            </div>
+            <div class="spectrum-bar-item" data-ch="149">
+              <div class="grouped-bars-container" id="grouped-bars-149">
+                <div class="slim-bar-placeholder"></div>
+              </div>
+              <span class="ch-label">5G 149</span>
+            </div>
           </div>
-
-          <div id="radar-blips-layer"></div>
         </div>
 
-        <div class="radar-legend">
-          <span class="legend-item"><span class="dot green"></span> Safe AP</span>
-          <span class="legend-item"><span class="dot amber"></span> DoS Alert</span>
-          <span class="legend-item"><span class="dot red"></span> Rogue AP</span>
+        <div class="glass-panel table-panel">
+          <div class="panel-header">
+            <div class="header-title flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/>
+                <line x1="3" y1="12" x2="3.01" y2="12"/>
+                <line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+              <h3>REAL-TIME 802.11 BEACON STREAM</h3>
+            </div>
+            <span class="table-count" id="table-row-count">0 Unique Networks Monitored</span>
+          </div>
+          
+          <div class="table-wrapper">
+            <table class="airspace-table">
+              <thead>
+                <tr>
+                  <th>Frame #</th>
+                  <th>SSID</th>
+                  <th>BSSID (MAC)</th>
+                  <th>RSSI</th>
+                  <th>Seq Ctrl</th>
+                  <th>Clock Skew (θ)</th>
+                  <th>Seq Entropy</th>
+                  <th>Threat Score</th>
+                  <th>Verdict</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="airspace-tbody">
+                <tr class="empty-row">
+                  <td colspan="10">Listening for 802.11 Management Beacon Frames...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
+
       </div>
 
-      <!-- Enforcement Section -->
-      <div class="enforcement-panel">
-        <div class="panel-header">
-          <h3>AUTOMATED OS MITIGATION</h3>
-          <span class="tag-live">PRE-CONNECTION</span>
+      <div class="right-panel flex-col gap-4">
+
+        <div class="glass-panel radar-panel">
+          <div class="panel-header border-b flex items-center justify-between">
+            <span class="panel-title-sm">AIRSPACE DISTANCE RADAR</span>
+            <span class="radar-dist-badge" id="radar-dist-badge">Est. Dist: -- m</span>
+          </div>
+
+          <div class="radar-wrapper">
+            <div class="radar-container" id="radar-container">
+              <div class="radar-sweep"></div>
+              <div class="radar-ring ring-1" data-label="5m"></div>
+              <div class="radar-ring ring-2" data-label="10m"></div>
+              <div class="radar-ring ring-3" data-label="15m"></div>
+              <div class="radar-ring ring-4" data-label="20m"></div>
+              <div class="radar-axis axis-x"></div>
+              <div class="radar-axis axis-y"></div>
+              
+              <div class="radar-center">
+                <span class="radar-center-dot"></span>
+                <span class="radar-center-label">ME</span>
+              </div>
+
+              <div id="radar-blips-layer"></div>
+            </div>
+
+            <div class="radar-legend">
+              <span class="legend-item"><span class="dot green"></span> Safe AP</span>
+              <span class="legend-item"><span class="dot amber"></span> DoS Alert</span>
+              <span class="legend-item"><span class="dot red"></span> Rogue AP</span>
+            </div>
+          </div>
         </div>
 
-        <div class="enforcement-body">
-          <div class="active-threat-card" id="active-threat-display">
-            <div class="threat-header">
-              <svg class="icon-svg-red" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <span class="threat-title">AIRSPACE ENGINE STATUS</span>
+        <div class="glass-panel forensic-card">
+          <div class="panel-header border-b">
+            <div>
+              <span class="forensic-badge" id="forensic-status-badge">Access Point Details</span>
+              <h3 id="forensic-ssid" class="text-lg">Select an AP row</h3>
+              <span id="forensic-bssid" class="text-mono-sub">00:00:00:00:00:00</span>
             </div>
-            <p class="threat-desc" id="threat-status-msg">Monitoring 802.11 Beacon Frames... Airspace Status Normal.</p>
-            <div class="cmd-box" id="cmd-box" style="display:none;">
-              <code>nmcli device wifi block bssid --</code>
-              <button class="btn-exec" id="btn-force-exec">Enforce OS Ban Now</button>
+            <button class="btn-isolate" id="btn-isolate-ap">ISOLATE</button>
+          </div>
+
+          <div class="forensic-metrics-grid">
+            <div class="metric-box">
+              <span class="m-label">THREAT SCORE</span>
+              <div class="threat-gauge">
+                <div class="gauge-arc" id="forensic-gauge-arc"></div>
+                <h2 id="forensic-threat-score" class="gauge-num">0%</h2>
+              </div>
+            </div>
+
+            <div class="metric-box">
+              <span class="m-label">SEQ ENTROPY</span>
+              <div class="entropy-bar-wrapper">
+                <div class="entropy-bar-fill" id="forensic-entropy-bar" style="width: 10%;"></div>
+              </div>
+              <span class="m-value-sub" id="forensic-entropy-val">0.05 (NORMAL)</span>
             </div>
           </div>
 
-          <div class="feed-title">EVENT LOG FEED</div>
-          <div class="threat-feed-scroll" id="threat-feed-container">
-            <!-- Feed Items -->
+          <div class="metric-box full-width">
+            <div class="flex-between mb-1">
+              <span class="m-label">CLOCK SKEW (PPM)</span>
+              <span class="m-value-highlight" id="forensic-skew-val">+0.00 ppm</span>
+            </div>
+            <div class="skew-sparkline" id="forensic-skew-sparkline">
+              <div class="sparkline-bar" style="height: 20%;"></div>
+              <div class="sparkline-bar" style="height: 25%;"></div>
+              <div class="sparkline-bar" style="height: 22%;"></div>
+              <div class="sparkline-bar" style="height: 28%;"></div>
+              <div class="sparkline-bar" style="height: 30%;"></div>
+              <div class="sparkline-bar" style="height: 35%;"></div>
+              <div class="sparkline-bar" style="height: 25%;"></div>
+            </div>
           </div>
+        </div>
+
+        <div class="glass-panel terminal-panel">
+          <div class="terminal-header linux-terminal-header">
+            <div class="linux-terminal-title">
+              <span class="linux-prompt">root@purifier:~/log#</span>
+              <span class="terminal-title">AUTO-MITIGATION LOG</span>
+            </div>
+            <div class="linux-window-buttons">
+              <span class="linux-btn" title="Minimize">&minus;</span>
+              <span class="linux-btn" title="Maximize">&#9633;</span>
+              <span class="linux-btn close-btn" title="Close">&times;</span>
+            </div>
+          </div>
+
+          <div class="terminal-body terminal-scroll" id="threat-feed-container">
+            <div class="log-entry info">[LOG] PuriFier v2.0 Agent initialized. Monitoring Layer 2 airspace...</div>
+          </div>
+          
+          <div class="terminal-footer" id="cmd-box" style="display:none;">
+            <code id="cmd-text">nmcli device wifi block bssid --</code>
+            <button class="btn-exec" id="btn-force-exec">Block OS Now</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="channel-zoom-modal" class="modal-overlay hidden">
+    <div class="modal-content glass-panel" style="max-width: 860px;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 id="channel-zoom-title">CHANNEL SPECTRUM INSPECTOR</h2>
+          <span class="text-mono-sub" id="channel-zoom-subtitle">0 Networks Active on Channel</span>
+        </div>
+        <button id="channel-zoom-close-btn" class="modal-close">&times;</button>
+      </div>
+
+      <div class="modal-body flex-col gap-4">
+        
+        <div class="flex-between items-center">
+          <div class="filter-pills-group flex gap-2">
+            <button class="filter-pill active" id="ch-filter-all">ALL (<span id="ch-count-all">0</span>)</button>
+            <button class="filter-pill red" id="ch-filter-threats">THREATS ONLY (<span id="ch-count-threats">0</span>)</button>
+            <button class="filter-pill green" id="ch-filter-safe">SAFE ONLY (<span id="ch-count-safe">0</span>)</button>
+          </div>
+          <span class="text-xs text-dim">Click any WiFi bar to view AP parameters</span>
+        </div>
+
+        <div class="wide-spectrum-container" id="wide-spectrum-bars">
+          
         </div>
       </div>
     </div>
-
-    <!-- Table Section -->
-    <section class="table-panel">
-      <div class="panel-header">
-        <h3>AIRSPACE BEACON INSPECTION TABLE <span class="sub-hint">(Click any row to view full AP parameters & vector heading)</span></h3>
-        <span class="table-count" id="table-row-count">0 AP Beacons Scanned</span>
-      </div>
-      <div class="table-wrapper">
-        <table class="airspace-table">
-          <thead>
-            <tr>
-              <th>Frame #</th>
-              <th>SSID</th>
-              <th>BSSID (MAC)</th>
-              <th>RSSI</th>
-              <th>Seq Ctrl (SC)</th>
-              <th>Clock Skew (θ)</th>
-              <th>Seq Entropy</th>
-              <th>Threat Score</th>
-              <th>Verdict</th>
-              <th>OS Ban Command</th>
-            </tr>
-          </thead>
-          <tbody id="airspace-tbody">
-            <tr class="empty-row">
-              <td colspan="10">Listening for 802.11 Management Beacon Frames...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
   </div>
 
-  <!-- AP PARAMETER DETAIL MODAL -->
+  <div id="unique-networks-modal" class="modal-overlay hidden">
+    <div class="modal-content glass-panel" style="max-width: 680px;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2>MONITORED UNIQUE NETWORKS</h2>
+          <span class="text-mono-sub" id="unique-modal-count">0 Unique SSIDs Active</span>
+        </div>
+        <button id="unique-modal-close-btn" class="modal-close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="table-wrapper" style="max-height: 340px;">
+          <table class="airspace-table">
+            <thead>
+              <tr>
+                <th>SSID</th>
+                <th>BSSID (MAC)</th>
+                <th>Channel</th>
+                <th>RSSI</th>
+                <th>Verdict</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="unique-networks-tbody">
+              <tr class="empty-row">
+                <td colspan="6">No networks detected yet...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="detail-modal" class="modal-overlay hidden">
-    <div class="modal-content">
+    <div class="modal-content glass-panel">
       <div class="modal-header">
         <div class="modal-title-group">
           <h2 id="modal-ssid">SSID Name</h2>
@@ -221,19 +432,13 @@
           <div class="metric-item">
             <span class="m-title">RSSI SIGNAL</span>
             <span id="modal-rssi" class="m-val">-65 dBm</span>
-            <span class="m-sub" id="modal-rssi-trend">Signal Trend: Stable</span>
-          </div>
-
-          <div class="metric-item">
-            <span class="m-title">ESTIMATED DISTANCE</span>
-            <span id="modal-dist-est" class="m-val">2.8 M</span>
-            <span class="m-sub">Physical Attenuation</span>
+            <span class="m-sub" id="modal-rssi-trend">Signal Power</span>
           </div>
 
           <div class="metric-item">
             <span class="m-title">SEQUENCE CONTROL (SC)</span>
             <span id="modal-seq-ctrl" class="m-val">N/A</span>
-            <span class="m-sub">TShark Hardware Counter</span>
+            <span class="m-sub">Hardware Counter</span>
           </div>
 
           <div class="metric-item">
@@ -253,18 +458,11 @@
             <span id="modal-entropy" class="m-val">0.08</span>
             <span class="m-sub">Shannon Discontinuity</span>
           </div>
-
-          <div class="metric-item">
-            <span class="m-title">HEADING VECTOR</span>
-            <span id="modal-heading-vector" class="m-val">45° Vector</span>
-            <span class="m-sub">Direction Angle</span>
-          </div>
         </div>
-
 
         <div class="modal-score-section">
           <div class="score-header">
-            <span>ONNX RANDOM FOREST THREAT SCORE</span>
+            <span>RANDOM FOREST THREAT SCORE</span>
             <span id="modal-score-pct" class="score-num">4.0%</span>
           </div>
           <div class="score-bar-bg">
