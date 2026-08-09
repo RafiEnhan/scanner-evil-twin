@@ -2,14 +2,36 @@ import os
 import sys
 import numpy as np
 
+
 class ONNXModelWrapper:
+    """
+    Wrapper tipis di atas onnxruntime.InferenceSession untuk menyeragamkan
+    antarmuka prediksi agar kompatibel dengan API sklearn (predict / predict_proba).
+    """
+
     def __init__(self, onnx_path):
+        """
+        Memuat model ONNX dari file dan mengekstrak metadata input/output.
+
+        Args:
+            onnx_path (str): Path absolut ke file model .onnx.
+        """
         import onnxruntime as rt
         self.session = rt.InferenceSession(onnx_path)
         self.input_name = self.session.get_inputs()[0].name
         self.output_names = [o.name for o in self.session.get_outputs()]
 
     def predict_proba(self, X):
+        """
+        Menjalankan inferensi dan mengembalikan probabilitas per kelas.
+        Mendukung tiga format output ONNX: list of dict, ndarray, atau label saja.
+
+        Args:
+            X (array-like): Fitur input, shape (n_samples, n_features) atau (n_features,).
+
+        Returns:
+            np.ndarray: Array shape (n_samples, 2) berisi [prob_kelas_0, prob_kelas_1].
+        """
         X = np.array(X, dtype=np.float32)
         if len(X.shape) == 1:
             X = X.reshape(1, -1)
@@ -24,14 +46,35 @@ class ONNXModelWrapper:
             return np.column_stack([1.0 - pred, pred])
 
     def predict(self, X):
+        """
+        Menjalankan inferensi dan mengembalikan label prediksi (kelas).
+
+        Args:
+            X (array-like): Fitur input, shape (n_samples, n_features) atau (n_features,).
+
+        Returns:
+            np.ndarray: Array label prediksi, shape (n_samples,).
+        """
         X = np.array(X, dtype=np.float32)
         if len(X.shape) == 1:
             X = X.reshape(1, -1)
         outputs = self.session.run(self.output_names, {self.input_name: X})
         return outputs[0]
 
+
 def load_trained_model():
-    """Locates and loads the ONNX or Joblib ML model from expected paths."""
+    """
+    Memuat model ML yang sudah dilatih dari lokasi yang diprioritaskan:
+    .onnx (utama) → .joblib → .pkl. Mendukung mode bundled (PyInstaller _MEIPASS)
+    maupun mode development biasa.
+
+    Returns:
+        tuple[ONNXModelWrapper | Any, str]: Pasangan (model, path) dari model
+        yang berhasil dimuat.
+
+    Raises:
+        RuntimeError: Jika tidak ada file model yang ditemukan di semua kandidat path.
+    """
     base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     candidate_paths = [
         "purifier_rf_model.onnx",

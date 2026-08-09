@@ -5,7 +5,13 @@ import subprocess
 import threading
 
 def find_tshark_path():
-    """Locates the tshark binary on the system or bundled inside the project folder."""
+    """
+    Mencari binary tshark, dengan prioritas: bundled di folder proyek,
+    lalu PATH sistem, lalu lokasi instalasi umum Wireshark.
+
+    Returns:
+        str | None: Path absolut ke tshark binary, atau None jika tidak ditemukan.
+    """
     base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     bundled_paths = [
         os.path.join(base_dir, "bin", "tshark", "tshark.exe"),
@@ -29,7 +35,7 @@ def find_tshark_path():
                 return first_line
     except Exception:
         pass
-    
+
     common_paths = [
         "C:\\Program Files\\Wireshark\\tshark.exe",
         "C:\\Program Files (x86)\\Wireshark\\tshark.exe",
@@ -44,10 +50,16 @@ def find_tshark_path():
     return None
 
 def find_wlan_helper():
-    """Locates WlanHelper.exe on Windows for Npcap Monitor Mode control."""
+    """
+    Mencari WlanHelper.exe milik Npcap untuk kontrol Monitor Mode di Windows.
+
+    Returns:
+        str | None: Path absolut ke WlanHelper.exe, atau None jika tidak ditemukan
+                    atau platform bukan Windows.
+    """
     if sys.platform != "win32":
         return None
-        
+
     candidates = [
         r"C:\Windows\System32\WlanHelper.exe",
         r"C:\Program Files\Npcap\WlanHelper.exe",
@@ -57,7 +69,7 @@ def find_wlan_helper():
     for c in candidates:
         if os.path.exists(c):
             return c
-            
+
     try:
         res = subprocess.run(["where", "WlanHelper.exe"], capture_output=True, text=True)
         if res.returncode == 0 and res.stdout.strip():
@@ -69,7 +81,17 @@ def find_wlan_helper():
     return None
 
 def run_wlan_helper(wlan_helper_path, args):
-    """Executes WlanHelper.exe cleanly by piping a newline to bypass keypress prompts."""
+    """
+    Menjalankan WlanHelper.exe dengan argumen tertentu. Mengirim newline ke stdin
+    untuk melewati prompt interaktif yang muncul di beberapa versi Npcap.
+
+    Args:
+        wlan_helper_path (str): Path absolut ke WlanHelper.exe.
+        args (list[str]): Daftar argumen CLI yang akan diteruskan ke WlanHelper.
+
+    Returns:
+        subprocess.CompletedProcess | None: Hasil proses, atau None jika gagal dijalankan.
+    """
     cmd = [wlan_helper_path] + args
     try:
         res = subprocess.run(cmd, input="\n", capture_output=True, text=True, timeout=5)
@@ -78,11 +100,21 @@ def run_wlan_helper(wlan_helper_path, args):
         return None
 
 def get_wlan_interface_guid(wlan_helper_path):
-    """Retrieves the Wi-Fi interface GUID using WlanHelper.exe -i."""
+    """
+    Mengambil GUID interface Wi-Fi dari output WlanHelper.exe -i.
+    GUID diidentifikasi dari string berformat 36 karakter dengan 4 tanda hubung.
+
+    Args:
+        wlan_helper_path (str): Path absolut ke WlanHelper.exe.
+
+    Returns:
+        str | None: GUID interface Wi-Fi (misal: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
+                    atau None jika tidak ditemukan.
+    """
     res = run_wlan_helper(wlan_helper_path, ["-i"])
     if not res or not res.stdout:
         return None
-        
+
     lines = [line.strip() for line in res.stdout.splitlines() if line.strip() and "press any key" not in line.lower() and "interactive" not in line.lower()]
     for line in lines:
         parts = line.split()
@@ -93,7 +125,18 @@ def get_wlan_interface_guid(wlan_helper_path):
     return None
 
 def enable_windows_monitor_mode(wlan_helper_path, guid):
-    """Attempts to set the Wi-Fi interface to Monitor Mode via WlanHelper and returns exact output message."""
+    """
+    Mengaktifkan Monitor Mode pada interface Wi-Fi via WlanHelper.exe,
+    lalu memverifikasi hasilnya dengan query ulang mode aktif.
+
+    Args:
+        wlan_helper_path (str): Path absolut ke WlanHelper.exe.
+        guid (str): GUID interface Wi-Fi target.
+
+    Returns:
+        tuple[bool, str]: (True, 'Success') jika berhasil, atau
+                          (False, pesan_error) jika gagal.
+    """
     res = run_wlan_helper(wlan_helper_path, [guid, "mode", "monitor"])
     if res:
         out_msg = (res.stdout or "") + (res.stderr or "")
@@ -106,14 +149,33 @@ def enable_windows_monitor_mode(wlan_helper_path, guid):
     return False, "Failed to execute WlanHelper.exe"
 
 def restore_windows_managed_mode(wlan_helper_path, guid):
-    """Restores the Wi-Fi interface back to Managed Mode."""
+    """
+    Mengembalikan interface Wi-Fi dari Monitor Mode ke Managed Mode.
+
+    Args:
+        wlan_helper_path (str): Path absolut ke WlanHelper.exe.
+        guid (str): GUID interface Wi-Fi target.
+    """
     run_wlan_helper(wlan_helper_path, [guid, "mode", "managed"])
 
 def start_channel_hopper(wlan_helper_path, guid, channels=None, interval_sec=0.25):
-    """Spawns a daemon thread to hop channels continuously in Monitor Mode."""
+    """
+    Menjalankan daemon thread yang berpindah channel Wi-Fi secara berulang
+    agar capture mencakup seluruh spektrum 2.4 GHz.
+
+    Args:
+        wlan_helper_path (str): Path absolut ke WlanHelper.exe.
+        guid (str): GUID interface Wi-Fi target.
+        channels (list[int] | None): Daftar channel yang akan di-hop.
+                                     Default: channel 1–13.
+        interval_sec (float): Jeda antar perpindahan channel dalam detik. Default: 0.25.
+
+    Returns:
+        threading.Thread: Daemon thread yang sedang berjalan.
+    """
     if channels is None:
         channels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-        
+
     def hopper_worker():
         while True:
             for ch in channels:
@@ -125,7 +187,17 @@ def start_channel_hopper(wlan_helper_path, guid, channels=None, interval_sec=0.2
     return t
 
 def detect_wifi_interface(tshark_path):
-    """Dynamically detects the Wi-Fi interface name/index for Tshark capture."""
+    """
+    Mendeteksi nama atau indeks interface Wi-Fi yang tersedia untuk capture tshark.
+    Di Windows, memilih interface berlabel '(Wi-Fi)' atau '(Wireless)' dari output tshark -D.
+
+    Args:
+        tshark_path (str): Path absolut ke tshark binary.
+
+    Returns:
+        str: Nama atau indeks interface (misal: 'en0', 'wlan0', atau '1').
+             Fallback ke '5' jika deteksi otomatis di Windows gagal.
+    """
     if sys.platform == "darwin":
         return "en0"
     elif sys.platform == "win32":
@@ -145,10 +217,21 @@ def detect_wifi_interface(tshark_path):
         return "wlan0"
 
 def start_tshark_process(tshark_path):
-    """Spawns a tshark subprocess for raw 802.11 packet sniffing."""
+    """
+    Memulai proses tshark untuk capture paket 802.11 secara real-time.
+    Di Windows, mencoba mengaktifkan Monitor Mode via WlanHelper sebelum capture.
+    Di macOS, menambahkan flag monitor mode (-I) dan filter beacon frame.
+
+    Args:
+        tshark_path (str): Path absolut ke tshark binary.
+
+    Returns:
+        subprocess.Popen | None: Objek proses tshark yang sedang berjalan,
+                                 atau None jika gagal diluncurkan.
+    """
     interface = detect_wifi_interface(tshark_path)
-    
-    # Attempt WlanHelper Monitor Mode on Windows if Admin
+
+    # Aktifkan Monitor Mode via WlanHelper jika di Windows
     if sys.platform == "win32":
         wlan_helper = find_wlan_helper()
         if wlan_helper:
@@ -169,8 +252,8 @@ def start_tshark_process(tshark_path):
                     print(f"[*] Falling back to standard interface capture.", file=sys.stderr)
 
     cmd = [
-        tshark_path, 
-        "-i", interface, 
+        tshark_path,
+        "-i", interface,
         "-l",
         "-T", "fields",
         "-e", "frame.number",
@@ -183,7 +266,7 @@ def start_tshark_process(tshark_path):
         "-e", "wlan.fixed.timestamp"
     ]
 
-    # Filter 802.11 beacons on macOS where monitor mode is active
+    # Filter hanya beacon frame (subtype 8) di macOS dengan monitor mode aktif
     if sys.platform == "darwin":
         cmd.insert(3, "-I")
         cmd.insert(4, "-Y")
