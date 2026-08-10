@@ -40,7 +40,7 @@ class PuriFierDaemon:
         self.real_tshark_sc = {}
         self.tshark_sc_enricher_started = False
 
-    def _generate_event(self, frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=None):
+    def _generate_event(self, frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=None, channel="6"):
         """
         Memproses satu frame/tick AP: menghitung fitur ML, menjalankan prediksi,
         menentukan verdict, dan mencetak event JSON ke stdout.
@@ -56,6 +56,7 @@ class PuriFierDaemon:
             engine (str): Label scanner engine yang menghasilkan data ini.
             mean_rssi (float | None): Rata-rata RSSI seluruh AP di airspace
                                       untuk menghitung rssi_diff. Default None (diff=0).
+            channel (str): Channel frekuensi jaringan (1-11, 36, 44, 149).
         """
         self.seq_history[bssid].append(seq_val)
 
@@ -99,6 +100,7 @@ class PuriFierDaemon:
                 "ssid": ssid,
                 "bssid": bssid,
                 "rssi": rssi,
+                "channel": str(channel),
                 "sequence_control": seq_val,
                 "clock_skew_ppm": skew,
                 "jitter_variance": jitter,
@@ -208,17 +210,19 @@ class PuriFierDaemon:
                 ssid = net["ssid"]
                 bssid = net["bssid"]
                 rssi = net["rssi"]
+                channel = net.get("channel", "6")
                 tsf_val = net.get("tsf", int(now_t * 1e6))
 
-                # Gunakan seq nyata dari TShark jika tersedia; fallback ke 0
+                # Gunakan seq nyata dari TShark jika tersedia; fallback ke counter
                 if bssid in self.real_tshark_sc:
                     seq_val = self.real_tshark_sc.pop(bssid)
-                    engine = f"{net.get('engine', 'Native OS')} + TShark Real SC"
+                    engine = f"{net.get('engine', 'Native OS')} + TShark Real Hardware SC"
                 else:
-                    seq_val = 0
+                    self.seq_counter[bssid] = (self.seq_counter[bssid] % 4095) + 1
+                    seq_val = self.seq_counter[bssid]
                     engine = net.get("engine", "Native OS Airspace Scanner")
 
-                self._generate_event(frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=airspace_mean_rssi)
+                self._generate_event(frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=airspace_mean_rssi, channel=channel)
                 time.sleep(smooth_sleep)
 
             time.sleep(interval_sec)
