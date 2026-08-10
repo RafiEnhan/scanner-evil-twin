@@ -38,15 +38,26 @@ function createWindow() {
     return 'python3';
   }
 
-  const standaloneBackendExe = path.join(__dirname, 'dist', 'purifier_backend', 'purifier_backend');
-  const standaloneBackendOneFile = path.join(__dirname, 'dist', 'purifier_backend');
+  const exeName = process.platform === 'win32' ? 'purifier_backend.exe' : 'purifier_backend';
+  const backendCandidates = [
+    path.join(process.resourcesPath, 'dist', 'purifier_backend', exeName),
+    path.join(process.resourcesPath, 'purifier_backend', exeName),
+    path.join(__dirname, 'dist', 'purifier_backend', exeName),
+    path.join(__dirname, 'dist', 'purifier_backend'),
+    path.join(process.resourcesPath, exeName)
+  ];
 
-  if (fs.existsSync(standaloneBackendExe)) {
-    console.log("[*] 🚀 Spawning PyInstaller --onedir backend binary:", standaloneBackendExe);
-    pythonProcess = spawn(standaloneBackendExe, []);
-  } else if (fs.existsSync(standaloneBackendOneFile) && fs.statSync(standaloneBackendOneFile).isFile()) {
-    console.log("[*] 🚀 Spawning PyInstaller --onefile backend binary:", standaloneBackendOneFile);
-    pythonProcess = spawn(standaloneBackendOneFile, []);
+  let binaryToRun = null;
+  for (const cand of backendCandidates) {
+    if (fs.existsSync(cand)) {
+      binaryToRun = cand;
+      break;
+    }
+  }
+
+  if (binaryToRun) {
+    console.log("[*] 🚀 Spawning PyInstaller backend binary:", binaryToRun);
+    pythonProcess = spawn(binaryToRun, []);
   } else {
     const pythonExecutable = findPython3();
     const backendScript = path.join(__dirname, 'purifier_backend.py');
