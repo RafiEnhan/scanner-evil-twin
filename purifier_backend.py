@@ -38,7 +38,6 @@ class PuriFierDaemon:
         self.seq_history = defaultdict(lambda: deque(maxlen=30))
         self.arrival_history = defaultdict(lambda: deque(maxlen=20))
         self.real_tshark_sc = {}
-        self.seq_counter = defaultdict(int)
         self.tshark_sc_enricher_started = False
 
     def _generate_event(self, frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=None, channel="6"):
@@ -214,13 +213,12 @@ class PuriFierDaemon:
                 channel = net.get("channel", "6")
                 tsf_val = net.get("tsf", int(now_t * 1e6))
 
-                # Gunakan seq nyata dari TShark jika tersedia; fallback ke counter
+                # Pure TShark SC values without artificial generator fallback
                 if bssid in self.real_tshark_sc:
                     seq_val = self.real_tshark_sc.pop(bssid)
-                    engine = f"{net.get('engine', 'Native OS')} + TShark Real Hardware SC"
+                    engine = f"{net.get('engine', 'Native OS')} + TShark Real SC"
                 else:
-                    self.seq_counter[bssid] = (self.seq_counter[bssid] % 4095) + 1
-                    seq_val = self.seq_counter[bssid]
+                    seq_val = 0
                     engine = net.get("engine", "Native OS Airspace Scanner")
 
                 self._generate_event(frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=airspace_mean_rssi, channel=channel)

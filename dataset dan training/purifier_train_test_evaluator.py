@@ -27,17 +27,17 @@ def save_model(model, joblib_path=DEFAULT_MODEL_JOBLIB, pkl_path=DEFAULT_MODEL_P
     if joblib:
         try:
             joblib.dump(model, joblib_path)
-            print(f"  └─ 💾 Joblib model saved: '{joblib_path}'")
+            print(f"    Joblib model saved: '{joblib_path}'")
         except Exception as e:
-            print(f"  └─ ⚠️ Failed to save joblib model: {e}")
+            print(f"    Failed to save joblib model: {e}")
 
     # 2. Save Pickle
     try:
         with open(pkl_path, "wb") as f:
             pickle.dump(model, f)
-        print(f"  └─ 💾 Pickle model saved: '{pkl_path}'")
+        print(f"    Pickle model saved: '{pkl_path}'")
     except Exception as e:
-        print(f"  └─ ⚠️ Failed to save pickle model: {e}")
+        print(f"    Failed to save pickle model: {e}")
 
     # 3. Export to ONNX format (agent.md Section 6 requirement)
     try:
@@ -49,19 +49,19 @@ def save_model(model, joblib_path=DEFAULT_MODEL_JOBLIB, pkl_path=DEFAULT_MODEL_P
         onnx_model = convert_sklearn(model, initial_types=initial_type)
         with open(onnx_path, "wb") as f:
             f.write(onnx_model.SerializeToString())
-        print(f"  └─ 🚀 ONNX model successfully exported: '{onnx_path}' (agent.md spec)")
+        print(f"    ONNX model successfully exported: '{onnx_path}' (agent.md spec)")
     except ImportError:
-        print(f"  └─ 💡 ONNX export skipped (skl2onnx/onnx not installed).")
+        print(f"    ONNX export skipped (skl2onnx/onnx not installed).")
         print(f"     Run command to install: pip install onnx skl2onnx onnxruntime")
     except Exception as e:
-        print(f"  └─ ⚠️ Failed to export ONNX model: {e}")
+        print(f"    Failed to export ONNX model: {e}")
 
 def load_saved_model(model_path):
     """
     Loads pre-trained model from disk (.joblib or .pkl or .onnx).
     """
     if not os.path.exists(model_path):
-        print(f"❌ Error: Model file '{model_path}' not found.")
+        print(f" Error: Model file '{model_path}' not found.")
         return None
 
     print(f"[*] Loading pre-trained Random Forest model from '{model_path}'...")
@@ -88,7 +88,7 @@ def load_saved_model(model_path):
                     return probs
             return ONNXWrapper(model_path)
         except ImportError:
-            print("❌ ONNX Runtime not installed. Run: pip install onnxruntime")
+            print(" ONNX Runtime not installed. Run: pip install onnxruntime")
             return None
     else:
         with open(model_path, "rb") as f:
@@ -113,7 +113,7 @@ def run_train_test_evaluation(dataset_path="dataset_twinevil.csv", nrows=530000,
                     break
 
     if not os.path.exists(dataset_path):
-        print(f"❌ Error: Dataset '{dataset_path}' not found.")
+        print(f" Error: Dataset '{dataset_path}' not found.")
         return None
 
     if dataset_path.endswith('.xlsx'):
@@ -180,7 +180,7 @@ def run_train_test_evaluation(dataset_path="dataset_twinevil.csv", nrows=530000,
         X, y, test_size=test_size, random_state=random_state, stratify=y if (y==1).sum() > 1 else None
     )
 
-    print(f"✅ Data Split Complete: {len(X_train):,} Train Samples (80%), {len(X_test):,} Unseen Test Samples (20%)")
+    print(f" Data Split Complete: {len(X_train):,} Train Samples (80%), {len(X_test):,} Unseen Test Samples (20%)")
 
     model = None
     if load_model_path:
@@ -188,7 +188,7 @@ def run_train_test_evaluation(dataset_path="dataset_twinevil.csv", nrows=530000,
 
     if model is None:
         if load_model_path:
-            print("⚠️ Could not load requested model. Falling back to training new model...")
+            print(" Could not load requested model. Falling back to training new model...")
         # Train Random Forest Classifier ONLY on 80% Train Set
         print("[*] Training PuriFier Random Forest Classifier (15 trees, max_depth=6, class_weight='balanced')...")
         model = RandomForestClassifier(n_estimators=15, max_depth=6, random_state=random_state, class_weight='balanced')
@@ -197,7 +197,7 @@ def run_train_test_evaluation(dataset_path="dataset_twinevil.csv", nrows=530000,
         if save_model_files:
             save_model(model)
     else:
-        print("⚡ Skipping training! Using pre-trained Random Forest model for instant evaluation/inference.")
+        print(" Skipping training! Using pre-trained Random Forest model for instant evaluation/inference.")
 
     # Evaluate Model ON UNSEEN TEST SET ONLY
     print("[*] Evaluating model on 20% Unseen Test Set...")
@@ -213,7 +213,7 @@ def run_train_test_evaluation(dataset_path="dataset_twinevil.csv", nrows=530000,
     print("\n==========================================================================")
     print("           PURIFIER MACHINE LEARNING TRAIN-TEST EVALUATION RESULTS        ")
     print("==========================================================================")
-    print(f"🎯 Accuracy Score on Unseen Test Set: {acc * 100:.4f}%\n")
+    print(f" Accuracy Score on Unseen Test Set: {acc * 100:.4f}%\n")
     print("=== CLASSIFICATION REPORT ===")
     print(classification_report(y_test, y_pred, labels=[0, 1], target_names=['Normal / Safe (0)', 'Evil Twin Threat (1)'], digits=4))
     
@@ -227,11 +227,11 @@ def run_train_test_evaluation(dataset_path="dataset_twinevil.csv", nrows=530000,
     df_eval = pd.DataFrame(X_test, columns=col_names)
     df_eval['ground_truth_label'] = np.where(y_test == 1, 'impersonation', 'normal')
     df_eval['onnx_threat_score'] = y_prob
-    df_eval['purifier_verdict'] = np.where(y_pred == 1, "🚨 RED: THREAT DETECTED (AUTO-CONNECT BAN ENFORCED)", "🟢 GREEN: VERIFIED SAFE AP")
+    df_eval['purifier_verdict'] = np.where(y_pred == 1, " RED: THREAT DETECTED (AUTO-CONNECT BAN ENFORCED)", "🟢 GREEN: VERIFIED SAFE AP")
     
     out_csv = "PuriFier_Train_Test_Evaluation_Report.csv"
     df_eval.to_csv(out_csv, index=False)
-    print(f"📁 Evaluation Report Saved: '{out_csv}'\n")
+    print(f" Evaluation Report Saved: '{out_csv}'\n")
 
     return df_eval
 

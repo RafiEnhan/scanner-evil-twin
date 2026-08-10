@@ -56,8 +56,8 @@ function createWindow() {
   }
 
   if (binaryToRun) {
-    console.log("[*] 🚀 Spawning PyInstaller backend binary:", binaryToRun);
-    pythonProcess = spawn(binaryToRun, []);
+    console.log("[*]  Spawning PyInstaller backend binary:", binaryToRun);
+    pythonProcess = spawn(binaryToRun, [], { cwd: path.dirname(binaryToRun) });
   } else {
     const pythonExecutable = findPython3();
     const backendScript = path.join(__dirname, 'purifier_backend.py');

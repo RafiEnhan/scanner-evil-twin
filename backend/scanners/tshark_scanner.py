@@ -13,25 +13,30 @@ def find_tshark_path():
         str | None: Path absolut ke tshark binary, atau None jika tidak ditemukan.
     """
     base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    bundled_paths = [
-        os.path.join(base_dir, "bin", "tshark", "tshark.exe"),
-        os.path.join(base_dir, "bin", "tshark", "tshark"),
-        os.path.join(base_dir, "bin", "tshark.exe"),
-        os.path.join(base_dir, "bin", "tshark"),
-        os.path.join(base_dir, "tools", "tshark", "tshark.exe"),
-        os.path.join(base_dir, "tshark", "tshark.exe"),
-    ]
-
-    for bp in bundled_paths:
-        if os.path.exists(bp):
-            return bp
+    if sys.platform == "win32":
+        bundled_paths = [
+            os.path.join(base_dir, "bin", "tshark", "tshark.exe"),
+            os.path.join(base_dir, "bin", "tshark.exe"),
+            os.path.join(base_dir, "tools", "tshark", "tshark.exe"),
+            os.path.join(base_dir, "tshark", "tshark.exe"),
+        ]
+        for bp in bundled_paths:
+            if os.path.isfile(bp):
+                return bp
+    else:
+        bundled_paths = [
+            os.path.join(base_dir, "bin", "tshark", "tshark"),
+        ]
+        for bp in bundled_paths:
+            if os.path.isfile(bp) and not bp.endswith('.exe'):
+                return bp
 
     try:
         which_cmd = "where" if sys.platform == "win32" else "which"
         res = subprocess.run([which_cmd, "tshark"], capture_output=True, text=True)
         if res.returncode == 0 and res.stdout.strip():
             first_line = res.stdout.strip().split('\n')[0].strip()
-            if os.path.exists(first_line):
+            if os.path.isfile(first_line):
                 return first_line
     except Exception:
         pass
@@ -39,13 +44,13 @@ def find_tshark_path():
     common_paths = [
         "C:\\Program Files\\Wireshark\\tshark.exe",
         "C:\\Program Files (x86)\\Wireshark\\tshark.exe",
+        "/Applications/Wireshark.app/Contents/MacOS/tshark",
         "/opt/homebrew/bin/tshark",
         "/usr/local/bin/tshark",
         "/usr/bin/tshark",
-        "/Applications/Wireshark.app/Contents/MacOS/tshark"
     ]
     for p in common_paths:
-        if os.path.exists(p):
+        if os.path.isfile(p):
             return p
     return None
 
