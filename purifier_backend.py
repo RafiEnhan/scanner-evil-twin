@@ -38,6 +38,7 @@ class PuriFierDaemon:
         self.seq_history = defaultdict(lambda: deque(maxlen=30))
         self.arrival_history = defaultdict(lambda: deque(maxlen=20))
         self.real_tshark_sc = {}
+        self.seq_counter = defaultdict(int)
         self.tshark_sc_enricher_started = False
 
     def _generate_event(self, frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=None, channel="6"):
