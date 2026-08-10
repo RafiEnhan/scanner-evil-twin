@@ -5,12 +5,32 @@ import hashlib
 from collections import defaultdict
 
 def scan_live_mac_airspace():
-    """Native 802.11 Airspace Scan Engine supporting Windows (netsh) and macOS (system_profiler)."""
+    """
+    Memindai jaringan Wi-Fi aktif di sekitar perangkat menggunakan tool native OS.
+    Mendukung Windows (netsh), Linux (nmcli), dan macOS (system_profiler).
+
+    Sinyal dalam persentase (Windows/Linux) dikonversi ke estimasi dBm
+    menggunakan formula: rssi = (pct / 2) - 100.
+    BSSID yang tidak tersedia akan di-generate secara deterministik via MD5.
+
+    Returns:
+        list[dict]: Daftar jaringan yang ditemukan. Setiap entry berisi:
+            - ssid (str): Nama jaringan.
+            - bssid (str): MAC address AP dalam format lowercase.
+            - rssi (int): Kekuatan sinyal dalam dBm.
+            - channel (str): Channel Wi-Fi.
+            - tsf (int): Timestamp dalam mikro detik (time.time * 1e6).
+            - seq (int): Sequence number, selalu 0 dari scanner ini.
+            - engine (str): Label scanner engine yang digunakan.
+    """
     raw_networks = []
 
     if sys.platform == "win32":
         try:
-            res = subprocess.run(["netsh", "wlan", "show", "networks", "mode=bssid"], capture_output=True, text=True, timeout=5, encoding='utf-8', errors='ignore')
+            res = subprocess.run(
+                ["netsh", "wlan", "show", "networks", "mode=bssid"],
+                capture_output=True, text=True, timeout=5, encoding='utf-8', errors='ignore'
+            )
             lines = res.stdout.split('\n')
             current_ssid = None
             current_net = None
@@ -48,9 +68,13 @@ def scan_live_mac_airspace():
                         current_net["channel"] = parts[1].strip()
         except Exception:
             pass
+
     elif sys.platform.startswith("linux"):
         try:
-            res = subprocess.run(["nmcli", "-t", "-f", "SSID,BSSID,SIGNAL,CHAN", "device", "wifi", "list"], capture_output=True, text=True, timeout=5, encoding='utf-8', errors='ignore')
+            res = subprocess.run(
+                ["nmcli", "-t", "-f", "SSID,BSSID,SIGNAL,CHAN", "device", "wifi", "list"],
+                capture_output=True, text=True, timeout=5, encoding='utf-8', errors='ignore'
+            )
             lines = res.stdout.split('\n')
             for line in lines:
                 s = line.strip()
@@ -74,10 +98,14 @@ def scan_live_mac_airspace():
                     })
         except Exception:
             pass
+
     else:
-        # macOS CoreWLAN system_profiler
+        # macOS: parsing output system_profiler SPAirPortDataType
         try:
-            res = subprocess.run(["system_profiler", "SPAirPortDataType"], capture_output=True, text=True, timeout=5)
+            res = subprocess.run(
+                ["system_profiler", "SPAirPortDataType"],
+                capture_output=True, text=True, timeout=5
+            )
             lines = res.stdout.split('\n')
             current_net = None
             in_section = False
@@ -106,7 +134,7 @@ def scan_live_mac_airspace():
         except Exception:
             pass
 
-
+    # Urutkan per SSID lalu RSSI terkuat, lalu normalisasi BSSID & tambahkan metadata
     sorted_networks = sorted(raw_networks, key=lambda x: (x.get("ssid", ""), -x.get("rssi", -100)))
     ssid_counters = defaultdict(int)
 
@@ -115,18 +143,18 @@ def scan_live_mac_airspace():
         ssid = net["ssid"]
         ssid_counters[ssid] += 1
         cnt = ssid_counters[ssid]
-        
+
         if "bssid" not in net or not net["bssid"]:
+            # Generate BSSID deterministik via MD5 jika tidak tersedia
             h = hashlib.md5(f"{ssid}_ap_{cnt}".encode('utf-8')).hexdigest()
             bssid = f"{h[0:2]}:{h[2:4]}:{h[4:6]}:{h[6:8]}:{h[8:10]}:{h[10:12]}"
             net["bssid"] = bssid
         else:
             net["bssid"] = net["bssid"].lower()
-        
+
         net["tsf"] = int(time.time() * 1e6)
         net["seq"] = 0
         net["engine"] = "Windows Netsh Native Scanner" if sys.platform == "win32" else "CoreWLAN (macOS System Profiler)"
         targets.append(net)
 
     return targets
-

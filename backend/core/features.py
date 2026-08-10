@@ -4,7 +4,19 @@ import numpy as np
 from collections import defaultdict
 
 def calculate_shannon_entropy(seq_list):
-    """Calculates pure Shannon Entropy for sequence control numbers."""
+    """
+    Menghitung Shannon Entropy dari daftar sequence control number 802.11.
+    Entropy dihitung dari distribusi selisih antar nilai berurutan (modulo 4096),
+    menghasilkan ukuran keacakan pola transmisi beacon suatu AP.
+
+    Args:
+        seq_list (list[int] | deque): Daftar sequence number yang telah dikumpulkan
+                                      untuk satu BSSID tertentu.
+
+    Returns:
+        float: Nilai entropy dalam bit (dibulatkan 2 desimal).
+               Mengembalikan 0.0 jika data kurang dari 2 sampel.
+    """
     if len(seq_list) < 2:
         return 0.0
     diffs = [(seq_list[i] - seq_list[i-1]) % 4096 for i in range(1, len(seq_list))]
@@ -19,20 +31,35 @@ def calculate_shannon_entropy(seq_list):
     return 0.0 if abs(res) < 1e-6 else res
 
 
-
-
 def calculate_clock_skew(bssid, tsf_val, current_time, tsf_history):
-    """Calculates hardware Clock Skew (PPM) using TSF timestamps."""
+    """
+    Menghitung Clock Skew hardware AP dalam satuan PPM (Parts Per Million)
+    menggunakan timestamp TSF (Time Synchronization Function) dari beacon frame.
+
+    Skew dasar diturunkan secara deterministik dari MD5 BSSID (rentang 8–23 PPM)
+    untuk mensimulasikan variasi hardware antar perangkat. Jika histori TSF
+    cukup, nilai terukur dari delta nyata ditambahkan ke skew dasar.
+
+    Args:
+        bssid (str): MAC address AP sebagai identifier unik.
+        tsf_val (int): Nilai TSF terbaru dari beacon frame (dalam mikro detik).
+        current_time (float): Waktu penerimaan frame (time.time()).
+        tsf_history (defaultdict): Dict berisi histori (current_time, tsf_val)
+                                   per BSSID untuk perhitungan delta.
+
+    Returns:
+        float: Estimasi clock skew dalam PPM (dibulatkan 2 desimal).
+    """
     tsf_history[bssid].append((current_time, tsf_val))
     history = tsf_history[bssid]
-    
-    # Calculate realistic unique hardware clock skew per AP BSSID signature
+
+    # Skew dasar deterministik per hardware AP berdasarkan hash BSSID (rentang 8.0–23.0 PPM)
     h = int(hashlib.md5(f"{bssid}".encode('utf-8')).hexdigest()[:4], 16)
-    base_skew = 8.0 + (h % 150) / 10.0  # Unique 8.0 to 23.0 PPM per AP hardware
-    
+    base_skew = 8.0 + (h % 150) / 10.0
+
     if len(history) < 2:
         return round(base_skew, 2)
-        
+
     t0, tsf0 = history[0]
     t1, tsf1 = history[-1]
     delta_t_sec = t1 - t0
@@ -51,8 +78,22 @@ def calculate_clock_skew(bssid, tsf_val, current_time, tsf_history):
 
 def calculate_tsf_jitter(bssid, tsf_val, tsf_val_history):
     """
-    Calculates Beacon Jitter directly using AP Hardware TSF (Time Synchronization Function) timestamps.
-    Immune to receiver OS background scanning & AWDL scheduling delays on macOS/Windows.
+    Menghitung Beacon Jitter menggunakan timestamp TSF hardware AP secara langsung.
+    Metode ini imun terhadap noise penjadwalan OS (AWDL, background scan) karena
+    menggunakan clock hardware AP, bukan clock penerima.
+
+    Jitter dihitung sebagai standar deviasi interval antar beacon (dalam detik),
+    lalu dikalikan 100 untuk skala yang lebih mudah dibaca.
+    Hanya interval dalam rentang valid 0.01–2.0 detik yang diperhitungkan.
+
+    Args:
+        bssid (str): MAC address AP sebagai identifier unik.
+        tsf_val (int): Nilai TSF terbaru dari beacon frame (dalam mikro detik).
+        tsf_val_history (defaultdict): Dict berisi histori TSF per BSSID.
+
+    Returns:
+        float: Nilai jitter (dibulatkan 2 desimal).
+               Mengembalikan 0.05 sebagai default jika data belum cukup (< 3 sampel).
     """
     tsf_val_history[bssid].append(tsf_val)
     history = list(tsf_val_history[bssid])
@@ -60,20 +101,17 @@ def calculate_tsf_jitter(bssid, tsf_val, tsf_val_history):
     if len(history) < 3:
         return 0.05
 
-    # Compute deltas in seconds between consecutive hardware TSF beacon timestamps
     tsf_deltas = []
     for i in range(1, len(history)):
         diff = history[i] - history[i-1]
         if diff > 0:
-            delta_sec = diff / 1e6  # convert microseconds to seconds
-            # Filter valid beacon interval windows (0.01s to 2.0s)
+            delta_sec = diff / 1e6  # konversi mikro detik ke detik
+            # Filter interval beacon yang valid (0.01s – 2.0s)
             if 0.01 <= delta_sec <= 2.0:
                 tsf_deltas.append(delta_sec)
 
     if len(tsf_deltas) >= 2:
-        # Standard deviation of hardware TSF beacon emission intervals
         jitter_val = float(np.std(tsf_deltas) * 100.0)
         return round(float(jitter_val), 2)
 
     return 0.05
-
