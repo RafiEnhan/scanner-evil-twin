@@ -6,9 +6,10 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "build:win": "electron-builder --win"
+    "build:win": "electron-builder --win --publish never"
   },
   "build": {
+    "publish": null,
     "appId": "com.purifier.radar",
     "productName": "PuriFier Radar",
     "directories": {
