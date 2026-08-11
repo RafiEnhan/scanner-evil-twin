@@ -94,158 +94,112 @@
       </div>
     </section>
 
-    <div class="main-content-grid">
+    <div class="main-content-grid flex-col gap-4">
       
-      <div class="left-panel flex-col gap-4">
-
-        <div class="glass-panel spectrum-panel">
-          <div class="panel-header">
-            <div class="header-title flex items-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-              </svg>
-              <h3>2.4GHz / 5GHz SPECTRUM MATRIX (SSID PLOTTED BY CHANNEL)</h3>
-            </div>
-            <div class="spectrum-legend flex gap-3 text-xs">
-              <span class="legend-chip clear"><span class="dot"></span> Safe AP</span>
-              <span class="legend-chip crit"><span class="dot"></span> Evil Twin</span>
-            </div>
+      <div class="glass-panel spectrum-panel">
+        <div class="panel-header">
+          <div class="header-title flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            <h3>2.4GHz / 5GHz SPECTRUM MATRIX (SSID PLOTTED BY CHANNEL)</h3>
           </div>
-          
-          <div class="spectrum-bars-wrapper" id="spectrum-bars-container">
-            
-            <div class="spectrum-bar-item" data-ch="1">
-              <div class="grouped-bars-container" id="grouped-bars-1">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">CH 1</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="2">
-              <div class="grouped-bars-container" id="grouped-bars-2">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">CH 2</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="3">
-              <div class="grouped-bars-container" id="grouped-bars-3">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">CH 3</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="4">
-              <div class="grouped-bars-container" id="grouped-bars-4">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">CH 4</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="5">
-              <div class="grouped-bars-container" id="grouped-bars-5">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">CH 5</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="6">
-              <div class="grouped-bars-container" id="grouped-bars-6">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">CH 6</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="7">
-              <div class="grouped-bars-container" id="grouped-bars-7">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">CH 7</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="8">
-              <div class="grouped-bars-container" id="grouped-bars-8">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">CH 8</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="9">
-              <div class="grouped-bars-container" id="grouped-bars-9">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">CH 9</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="10">
-              <div class="grouped-bars-container" id="grouped-bars-10">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">CH 10</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="11">
-              <div class="grouped-bars-container" id="grouped-bars-11">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">CH 11</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="36">
-              <div class="grouped-bars-container" id="grouped-bars-36">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">5G 36</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="44">
-              <div class="grouped-bars-container" id="grouped-bars-44">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">5G 44</span>
-            </div>
-            <div class="spectrum-bar-item" data-ch="149">
-              <div class="grouped-bars-container" id="grouped-bars-149">
-                <div class="slim-bar-placeholder"></div>
-              </div>
-              <span class="ch-label">5G 149</span>
-            </div>
+          <div class="spectrum-legend flex gap-3 text-xs">
+            <span class="legend-chip clear"><span class="dot"></span> Safe AP</span>
+            <span class="legend-chip crit"><span class="dot"></span> Evil Twin</span>
           </div>
         </div>
-
-        <div class="glass-panel table-panel">
-          <div class="panel-header">
-            <div class="header-title flex items-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="8" y1="6" x2="21" y2="6"/>
-                <line x1="8" y1="12" x2="21" y2="12"/>
-                <line x1="8" y1="18" x2="21" y2="18"/>
-                <line x1="3" y1="6" x2="3.01" y2="6"/>
-                <line x1="3" y1="12" x2="3.01" y2="12"/>
-                <line x1="3" y1="18" x2="3.01" y2="18"/>
-              </svg>
-              <h3>REAL-TIME 802.11 BEACON STREAM</h3>
+        
+        <div class="spectrum-bars-wrapper" id="spectrum-bars-container">
+          <div class="spectrum-bar-item" data-ch="1">
+            <div class="grouped-bars-container" id="grouped-bars-1">
+              <div class="slim-bar-placeholder"></div>
             </div>
-            <span class="table-count" id="table-row-count">0 Unique Networks Monitored</span>
+            <span class="ch-label">CH 1</span>
           </div>
-          
-          <div class="table-wrapper">
-            <table class="airspace-table">
-              <thead>
-                <tr>
-                  <th>Frame #</th>
-                  <th>SSID</th>
-                  <th>BSSID (MAC)</th>
-                  <th>RSSI</th>
-                  <th>Seq Ctrl</th>
-                  <th>Clock Skew (θ)</th>
-                  <th>Seq Entropy</th>
-                  <th>Threat Score</th>
-                  <th>Verdict</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="airspace-tbody">
-                <tr class="empty-row">
-                  <td colspan="10">Listening for 802.11 Management Beacon Frames...</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="spectrum-bar-item" data-ch="2">
+            <div class="grouped-bars-container" id="grouped-bars-2">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">CH 2</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="3">
+            <div class="grouped-bars-container" id="grouped-bars-3">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">CH 3</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="4">
+            <div class="grouped-bars-container" id="grouped-bars-4">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">CH 4</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="5">
+            <div class="grouped-bars-container" id="grouped-bars-5">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">CH 5</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="6">
+            <div class="grouped-bars-container" id="grouped-bars-6">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">CH 6</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="7">
+            <div class="grouped-bars-container" id="grouped-bars-7">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">CH 7</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="8">
+            <div class="grouped-bars-container" id="grouped-bars-8">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">CH 8</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="9">
+            <div class="grouped-bars-container" id="grouped-bars-9">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">CH 9</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="10">
+            <div class="grouped-bars-container" id="grouped-bars-10">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">CH 10</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="11">
+            <div class="grouped-bars-container" id="grouped-bars-11">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">CH 11</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="36">
+            <div class="grouped-bars-container" id="grouped-bars-36">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">5G 36</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="44">
+            <div class="grouped-bars-container" id="grouped-bars-44">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">5G 44</span>
+          </div>
+          <div class="spectrum-bar-item" data-ch="149">
+            <div class="grouped-bars-container" id="grouped-bars-149">
+              <div class="slim-bar-placeholder"></div>
+            </div>
+            <span class="ch-label">5G 149</span>
           </div>
         </div>
-
       </div>
 
-      <div class="right-panel flex-col gap-4">
-
+      <div class="radar-details-grid">
+        
         <div class="glass-panel radar-panel">
           <div class="panel-header border-b flex items-center justify-between">
             <span class="panel-title-sm">AIRSPACE DISTANCE RADAR</span>
@@ -323,30 +277,73 @@
           </div>
         </div>
 
-        <div class="glass-panel terminal-panel">
-          <div class="terminal-header linux-terminal-header">
-            <div class="linux-terminal-title">
-              <span class="linux-prompt">root@purifier:~/log#</span>
-              <span class="terminal-title">AUTO-MITIGATION LOG</span>
-            </div>
-            <div class="linux-window-buttons">
-              <span class="linux-btn" title="Minimize">&minus;</span>
-              <span class="linux-btn" title="Maximize">&#9633;</span>
-              <span class="linux-btn close-btn" title="Close">&times;</span>
-            </div>
-          </div>
+      </div>
 
-          <div class="terminal-body terminal-scroll" id="threat-feed-container">
-            <div class="log-entry info">[LOG] PuriFier v2.0 Agent initialized. Monitoring Layer 2 airspace...</div>
+      <div class="glass-panel table-panel">
+        <div class="panel-header">
+          <div class="header-title flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/>
+              <line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/>
+              <line x1="3" y1="12" x2="3.01" y2="12"/>
+              <line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            <h3>REAL-TIME 802.11 BEACON STREAM</h3>
           </div>
-          
-          <div class="terminal-footer" id="cmd-box" style="display:none;">
-            <code id="cmd-text">nmcli device wifi block bssid --</code>
-            <button class="btn-exec" id="btn-force-exec">Block OS Now</button>
+          <span class="table-count" id="table-row-count">0 Unique Networks Monitored</span>
+        </div>
+        
+        <div class="table-wrapper">
+          <table class="airspace-table">
+            <thead>
+              <tr>
+                <th>Frame #</th>
+                <th>SSID</th>
+                <th>BSSID (MAC)</th>
+                <th>RSSI</th>
+                <th>Seq Ctrl</th>
+                <th>Clock Skew (θ)</th>
+                <th>Seq Entropy</th>
+                <th>Threat Score</th>
+                <th>Verdict</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="airspace-tbody">
+              <tr class="empty-row">
+                <td colspan="10">Listening for 802.11 Management Beacon Frames...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="glass-panel terminal-panel">
+        <div class="terminal-header linux-terminal-header">
+          <div class="linux-terminal-title">
+            <span class="linux-prompt">root@purifier:~/log#</span>
+            <span class="terminal-title">AUTO-MITIGATION LOG</span>
+          </div>
+          <div class="linux-window-buttons">
+            <span class="linux-btn" title="Minimize">&minus;</span>
+            <span class="linux-btn" title="Maximize">&#9633;</span>
+            <span class="linux-btn close-btn" title="Close">&times;</span>
           </div>
         </div>
 
+        <div class="terminal-body terminal-scroll" id="threat-feed-container">
+          <div class="log-entry info">[LOG] PuriFier v2.0 Agent initialized. Monitoring Layer 2 airspace...</div>
+        </div>
+        
+        <div class="terminal-footer" id="cmd-box" style="display:none;">
+          <code id="cmd-text">nmcli device wifi block bssid --</code>
+          <button class="btn-exec" id="btn-force-exec">Block OS Now</button>
+        </div>
       </div>
+
+    </div>
     </div>
   </div>
 

@@ -566,9 +566,16 @@ html.light .icon-red { background: rgba(220, 38, 38, 0.1); }
 .text-red { color: var(--accent-red) !important; }
 
 .main-content-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  display: flex;
+  flex-direction: column;
   gap: 20px;
+}
+
+.radar-details-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5.5fr) minmax(0, 6.5fr);
+  gap: 20px;
+  align-items: stretch;
 }
 
 .left-panel, .right-panel {
