@@ -7,8 +7,8 @@ let pythonProcess;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 820,
+    width: 1440,
+    height: 900,
     minWidth: 1024,
     minHeight: 720,
     title: "PuriFier — Pre-Connection Wireless Threat Intelligence",
