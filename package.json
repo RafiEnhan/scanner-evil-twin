@@ -44,8 +44,7 @@
     "win": {
       "icon": "icon.ico",
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ],
       "requestedExecutionLevel": "requireAdministrator"
     },
