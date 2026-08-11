@@ -3,6 +3,7 @@ import sys
 import time
 import subprocess
 import threading
+import re
 
 def find_tshark_path():
     """
@@ -13,10 +14,18 @@ def find_tshark_path():
         str | None: Path absolut ke tshark binary, atau None jika tidak ditemukan.
     """
     base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+    
     if sys.platform == "win32":
         bundled_paths = [
             os.path.join(base_dir, "bin", "tshark", "tshark.exe"),
+            os.path.join(exe_dir, "bin", "tshark", "tshark.exe"),
+            os.path.join(exe_dir, "..", "bin", "tshark", "tshark.exe"),
+            os.path.join(exe_dir, "..", "..", "bin", "tshark", "tshark.exe"),
             os.path.join(base_dir, "bin", "tshark.exe"),
+            os.path.join(exe_dir, "bin", "tshark.exe"),
+            os.path.join(exe_dir, "..", "bin", "tshark.exe"),
+            os.path.join(exe_dir, "..", "..", "bin", "tshark.exe"),
             os.path.join(base_dir, "tools", "tshark", "tshark.exe"),
             os.path.join(base_dir, "tshark", "tshark.exe"),
         ]
@@ -26,6 +35,9 @@ def find_tshark_path():
     else:
         bundled_paths = [
             os.path.join(base_dir, "bin", "tshark", "tshark"),
+            os.path.join(exe_dir, "bin", "tshark", "tshark"),
+            os.path.join(exe_dir, "..", "bin", "tshark", "tshark"),
+            os.path.join(exe_dir, "..", "..", "bin", "tshark", "tshark"),
         ]
         for bp in bundled_paths:
             if os.path.isfile(bp) and not bp.endswith('.exe'):
@@ -191,17 +203,18 @@ def start_channel_hopper(wlan_helper_path, guid, channels=None, interval_sec=0.2
     t.start()
     return t
 
+import re
+
 def detect_wifi_interface(tshark_path):
-    """
-    Mendeteksi nama atau indeks interface Wi-Fi yang tersedia untuk capture tshark.
-    Di Windows, memilih interface berlabel '(Wi-Fi)' atau '(Wireless)' dari output tshark -D.
+    r"""
+    Mendeteksi nama atau interface Wi-Fi yang tersedia untuk capture tshark.
+    Di Windows, mencari interface NPF yang sesuai dengan kata kunci Wi-Fi/Wireless/WLAN.
 
     Args:
         tshark_path (str): Path absolut ke tshark binary.
 
     Returns:
-        str: Nama atau indeks interface (misal: 'en0', 'wlan0', atau '1').
-             Fallback ke '5' jika deteksi otomatis di Windows gagal.
+        str: Nama atau NPF device interface (misal: '\\Device\\NPF_{...}', 'en0', atau '1').
     """
     if sys.platform == "darwin":
         return "en0"
@@ -209,15 +222,28 @@ def detect_wifi_interface(tshark_path):
         try:
             res = subprocess.run([tshark_path, "-D"], capture_output=True, text=True, timeout=5)
             if res.returncode == 0:
-                for line in res.stdout.split('\n'):
+                lines = res.stdout.split('\n')
+                keywords = ["wi-fi", "wireless", "wlan", "802.11", "realtek", "intel", "broadcom", "qualcomm", "mediatek", "tp-link", "koneksi jaringan nirkabel"]
+                for line in lines:
                     line_clean = line.strip()
-                    if "(wi-fi)" in line_clean.lower() or "(wireless" in line_clean.lower():
+                    if any(kw in line_clean.lower() for kw in keywords):
+                        if "\\device\\npf_" in line_clean.lower():
+                            match = re.search(r"(\\Device\\NPF_\{[a-f0-9\-]+\})", line_clean, re.IGNORECASE)
+                            if match:
+                                return match.group(1)
                         parts = line_clean.split('.')
                         if len(parts) > 1 and parts[0].strip().isdigit():
                             return parts[0].strip()
-        except Exception:
-            pass
-        return "5"
+
+                for line in lines:
+                    line_clean = line.strip()
+                    if "\\device\\npf_" in line_clean.lower():
+                        match = re.search(r"(\\Device\\NPF_\{[a-f0-9\-]+\})", line_clean, re.IGNORECASE)
+                        if match:
+                            return match.group(1)
+        except Exception as e:
+            print(f"[!] Error detecting Wi-Fi interface: {e}", file=sys.stderr)
+        return "1"
     else:
         return "wlan0"
 

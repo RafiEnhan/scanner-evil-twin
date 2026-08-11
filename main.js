@@ -23,6 +23,29 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 
   const fs = require('fs');
+  const logFilePath = path.join(app.getPath('userData'), 'purifier-app.log');
+
+  function logToFile(msg) {
+    const timestamp = new Date().toISOString();
+    const logLine = `[${timestamp}] ${msg}\n`;
+    try {
+      fs.appendFileSync(logFilePath, logLine);
+    } catch (err) {
+      console.error("Failed to write to log file:", err);
+    }
+  }
+
+  logToFile(`--- App Started (Platform: ${process.platform}, Arch: ${process.arch}) ---`);
+  logToFile(`Log file location: ${logFilePath}`);
+
+  process.on('uncaughtException', (error) => {
+    logToFile(`[CRITICAL UNCAUGHT EXCEPTION]: ${error ? (error.stack || error.message || error) : 'Unknown error'}`);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    logToFile(`[CRITICAL UNHANDLED REJECTION]: ${reason ? (reason.stack || reason) : 'Unknown rejection'}`);
+  });
+
   function findPython3() {
     if (process.platform === 'win32') return 'python';
     const candidates = [
@@ -56,11 +79,12 @@ function createWindow() {
   }
 
   if (binaryToRun) {
-    console.log("[*]  Spawning PyInstaller backend binary:", binaryToRun);
+    logToFile(`Spawning PyInstaller backend binary: ${binaryToRun}`);
     pythonProcess = spawn(binaryToRun, [], { cwd: path.dirname(binaryToRun) });
   } else {
     const pythonExecutable = findPython3();
     const backendScript = path.join(__dirname, 'purifier_backend.py');
+    logToFile(`Fallback: Spawning Python script (${pythonExecutable} ${backendScript})`);
     const customEnv = Object.assign({}, process.env, {
       PATH: `/Library/Frameworks/Python.framework/Versions/3.11/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:${process.env.PATH || ''}`
     });
@@ -68,23 +92,39 @@ function createWindow() {
   }
 
   pythonProcess.stdout.on('data', (data) => {
-    const lines = data.toString().split('\n');
+    const text = data.toString();
+    const lines = text.split('\n');
     lines.forEach(line => {
-      if (line.trim().startsWith('{')) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('{')) {
         try {
-          const jsonEvent = JSON.parse(line.trim());
+          const jsonEvent = JSON.parse(trimmed);
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.send('backend-event', jsonEvent);
           }
         } catch (e) {
-          console.error("JSON parse error:", e);
+          logToFile(`JSON parse error: ${e.message}`);
         }
+      } else if (trimmed) {
+        logToFile(`[Python STDOUT]: ${trimmed}`);
       }
     });
   });
 
   pythonProcess.stderr.on('data', (data) => {
-    console.error(`[Python Terminal Message]: ${data}`);
+    const msg = data.toString().trim();
+    if (msg) {
+      logToFile(`[Python STDERR]: ${msg}`);
+      console.error(`[Python Terminal Message]: ${msg}`);
+    }
+  });
+
+  pythonProcess.on('error', (err) => {
+    logToFile(`[Python Process ERROR]: ${err.message}`);
+  });
+
+  pythonProcess.on('exit', (code, signal) => {
+    logToFile(`[Python Process EXITED]: Code ${code}, Signal ${signal}`);
   });
 }
 
@@ -190,13 +230,26 @@ ipcMain.handle('execute-os-ban', async (event, banPayload) => {
           }
         });
       } else if (ssid) {
-        execFile('nmcli', ['connection', 'delete', ssid], (error, stdout, stderr) => {
-          if (error) resolve({ success: false, output: stderr || error.message });
-          else resolve({ success: true, output: stdout.trim() || `Enforcement Executed: Deleted connection '${ssid}' on Linux` });
+        execFile('nmcli', ['device', 'wifi', 'block', 'bssid', bssid], (error, stdout, stderr) => {
+          if (error) {
+            resolve({ success: false, output: stderr || error.message });
+          } else {
+            resolve({ success: true, output: stdout.trim() || `Enforcement Executed: Blocked BSSID '${bssid}' on Linux` });
+          }
         });
       } else {
-        resolve({ success: false, output: "Invalid parameters for nmcli enforcement." });
+        resolve({ success: false, output: "Unsupported platform or missing BSSID." });
       }
     }
   });
+});
+
+ipcMain.handle('open-log-file', async () => {
+  const { shell } = require('electron');
+  const logFilePath = path.join(app.getPath('userData'), 'purifier-app.log');
+  if (fs.existsSync(logFilePath)) {
+    shell.showItemInFolder(logFilePath);
+    return { success: true, path: logFilePath };
+  }
+  return { success: false, message: "Log file does not exist yet." };
 });

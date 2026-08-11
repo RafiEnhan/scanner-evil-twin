@@ -2,8 +2,15 @@ import sys
 import json
 import time
 import threading
+import traceback
 import numpy as np
 from collections import defaultdict, deque
+
+def log_uncaught_exception(exctype, value, tb):
+    print(f"[Python Uncaught Exception]: {exctype.__name__}: {value}", file=sys.stderr, flush=True)
+    traceback.print_exception(exctype, value, tb, file=sys.stderr)
+
+sys.excepthook = log_uncaught_exception
 
 from backend.models.rf_onnx import load_trained_model
 from backend.core.features import calculate_shannon_entropy, calculate_clock_skew, calculate_tsf_jitter
