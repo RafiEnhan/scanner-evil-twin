@@ -62,10 +62,12 @@ def scan_live_mac_airspace():
                             current_net["rssi"] = rssi_val
                         except Exception:
                             pass
-                elif current_net and "Channel" in s:
+                elif current_net and s.startswith("Channel ") and ":" in s:
                     parts = s.split(":", 1)
                     if len(parts) > 1:
-                        current_net["channel"] = parts[1].strip()
+                        chan_val = parts[1].strip()
+                        if chan_val.isdigit():
+                            current_net["channel"] = chan_val
         except Exception:
             pass
 

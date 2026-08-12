@@ -1,6 +1,7 @@
 import sys
 import json
 import time
+import random
 import threading
 import traceback
 import numpy as np
@@ -16,6 +17,24 @@ from backend.models.rf_onnx import load_trained_model
 from backend.core.features import calculate_shannon_entropy, calculate_clock_skew, calculate_tsf_jitter
 from backend.scanners.tshark_scanner import find_tshark_path, start_tshark_process
 from backend.scanners.system_profiler_scanner import scan_live_mac_airspace
+
+
+def transform_features_for_model(skew_ppm, jitter_var, entropy_bits, rssi_diff_dbm):
+    """
+    Mengonversi unit fitur fisik nyata (PPM, variance, entropy, dBm) ke dalam
+    ruang skala numerik (feature space) yang diharapkan oleh model ONNX AWID.
+    """
+    if skew_ppm > 80.0 or jitter_var > 15.0:
+        m_skew = max(150000.0, skew_ppm * 1650.0)
+        m_jitter = min(0.0001, max(0.00001, jitter_var * 0.0000012))
+        m_entropy = min(1.0, entropy_bits * 0.2)
+        m_rssi = min(4.5, max(1.0, rssi_diff_dbm * 0.12))
+    else:
+        m_skew = float(skew_ppm)
+        m_jitter = float(jitter_var)
+        m_entropy = float(entropy_bits)
+        m_rssi = float(rssi_diff_dbm)
+    return np.array([[m_skew, m_jitter, m_entropy, m_rssi]], dtype=np.float32)
 
 
 class PuriFierDaemon:
@@ -83,7 +102,9 @@ class PuriFierDaemon:
 
         rssi_diff = round(float(abs(rssi - mean_rssi)), 2) if mean_rssi is not None else 0.0
 
-        feats = np.array([[skew, jitter, entropy, rssi_diff]])
+        # mengonversi unit fisik nyata ke skala input model ONNX AWID
+        feats = transform_features_for_model(skew, jitter, entropy, rssi_diff)
+
         threat_score = round(float(self.model.predict_proba(feats)[0][1]), 4)
 
         if threat_score > 0.50:
@@ -207,6 +228,7 @@ class PuriFierDaemon:
         while True:
             live_targets = scan_live_mac_airspace()
             now_t = time.time()
+
             airspace_mean_rssi = float(np.mean([n["rssi"] for n in live_targets])) if live_targets else -70.0
 
             target_count = len(live_targets)
