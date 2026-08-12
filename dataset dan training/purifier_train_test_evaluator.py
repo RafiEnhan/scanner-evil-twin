@@ -20,7 +20,14 @@ DEFAULT_MODEL_ONNX = "purifier_rf_model.onnx"
 
 def save_model(model, joblib_path=DEFAULT_MODEL_JOBLIB, pkl_path=DEFAULT_MODEL_PKL, onnx_path=DEFAULT_MODEL_ONNX):
     """
-    Saves trained Random Forest Classifier to disk (.joblib, .pkl, and .onnx per agent.md spec).
+    Menyimpan model Random Forest Classifier yang telah dilatih ke disk dalam tiga format
+    sekaligus (.joblib, .pkl, dan .onnx) untuk kompatibilitas deployment multi-platform.
+
+    Args:
+        model (RandomForestClassifier): Objek model scikit-learn yang sudah di-fit.
+        joblib_path (str): Target file path untuk format joblib. Default: 'purifier_rf_model.joblib'.
+        pkl_path (str): Target file path untuk format pickle. Default: 'purifier_rf_model.pkl'.
+        onnx_path (str): Target file path untuk format ONNX. Default: 'purifier_rf_model.onnx'.
     """
     print("\n[*] Saving Random Forest Classifier model...")
     # 1. Save Joblib
@@ -39,7 +46,7 @@ def save_model(model, joblib_path=DEFAULT_MODEL_JOBLIB, pkl_path=DEFAULT_MODEL_P
     except Exception as e:
         print(f"    Failed to save pickle model: {e}")
 
-    # 3. Export to ONNX format (agent.md Section 6 requirement)
+    # 3. Export to ONNX format
     try:
         from skl2onnx import convert_sklearn
         from skl2onnx.common.data_types import FloatTensorType
@@ -58,7 +65,13 @@ def save_model(model, joblib_path=DEFAULT_MODEL_JOBLIB, pkl_path=DEFAULT_MODEL_P
 
 def load_saved_model(model_path):
     """
-    Loads pre-trained model from disk (.joblib or .pkl or .onnx).
+    Memuat model ML terlatih dari disk (.joblib, .pkl, atau .onnx).
+
+    Args:
+        model_path (str): Path absolut atau relatif ke file model.
+
+    Returns:
+        Any | None: Instance model ter-load (atau ONNXWrapper), atau None jika gagal.
     """
     if not os.path.exists(model_path):
         print(f" Error: Model file '{model_path}' not found.")
@@ -80,7 +93,6 @@ def load_saved_model(model_path):
                 def predict_proba(self, X):
                     X_float = X.astype(np.float32)
                     res = self.session.run(None, {self.input_name: X_float})
-                    # res[1] is list of dicts or array of probabilities
                     if isinstance(res[1], list):
                         probs = np.array([[d.get(0, 0.0), d.get(1, 0.0)] for d in res[1]])
                     else:
@@ -96,11 +108,23 @@ def load_saved_model(model_path):
 
 def run_train_test_evaluation(dataset_path="dataset_twinevil.csv", nrows=530000, test_size=0.20, random_state=42, load_model_path=None, save_model_files=True, balance_classes=True):
     """
-    PuriFier Machine Learning Train-Test Evaluation Engine
-    - Splits AWID dataset into Train Set (80%) and Unseen Test Set (20%).
-    - Trains Random Forest Classifier (15 trees, max depth 6) according to agent.md spec (or loads pre-trained model).
-    - Evaluates performance metrics (Accuracy, Precision, Recall, Confusion Matrix) on Unseen Test Set.
-    - Saves Random Forest model to disk for reuse without retraining.
+    Engine Evaluasi Train-Test ML PuriFier:
+    - Membagi dataset AWID menjadi Set Pelatihan (80%) dan Set Pengujian Unseen (20%).
+    - Melatih Random Forest Classifier (15 estimatos, max depth 6) atau memuat model terlatih.
+    - Mengevaluasi metrik kinerja (Akurasi, Presisi, Recall, Confusion Matrix) pada unseen test set.
+    - Menyimpan model ke disk dalam format ONNX/Joblib/Pickle.
+
+    Args:
+        dataset_path (str): Path ke file CSV/XLSX dataset AWID. Default: 'dataset_twinevil.csv'.
+        nrows (int): Jumlah baris maksimal yang akan dimuat. Default: 530,000.
+        test_size (float): Rasio porsi data pengujian. Default: 0.20 (80% train, 20% test).
+        random_state (int): Seed acak untuk reproduksibilitas. Default: 42.
+        load_model_path (str | None): Path file model pre-trained jika ingin melewasi proses training.
+        save_model_files (bool): Apakah menyimpan file model ke disk setelah training. Default: True.
+        balance_classes (bool): Apakah menerapkan penyeimbangan kelas 50:50. Default: True.
+
+    Returns:
+        pd.DataFrame | None: DataFrame hasil evaluasi per sampel data uji, atau None jika gagal.
     """
     print(f"[*] Loading dataset from '{dataset_path}' (nrows={nrows})...")
     

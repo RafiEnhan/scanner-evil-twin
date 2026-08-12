@@ -187,10 +187,12 @@ ipcMain.handle('execute-os-ban', async (event, banPayload) => {
         return resolve({ success: false, output: "Invalid SSID for networksetup enforcement." });
       }
       execFile('networksetup', ['-removepreferredwirelessnetwork', 'en0', ssid], (error, stdout, stderr) => {
+        const fullOutput = (stdout || '').trim() || (stderr || '').trim();
         if (error) {
-          resolve({ success: false, output: stderr || error.message });
+          const detail = fullOutput || error.message || 'Unknown networksetup error';
+          resolve({ success: false, output: detail });
         } else {
-          resolve({ success: true, output: stdout.trim() || `Enforcement Executed: Blocked SSID '${ssid}' on macOS` });
+          resolve({ success: true, output: fullOutput || `Enforcement Executed: Blocked SSID '${ssid}' on macOS` });
         }
       });
     } else if (process.platform === 'win32') {
@@ -202,10 +204,15 @@ ipcMain.handle('execute-os-ban', async (event, banPayload) => {
         return resolve({ success: false, output: "Invalid SSID for netsh enforcement." });
       }
       execFile('netsh', ['wlan', 'add', 'filter', 'permission=block', `ssid=${ssid}`, 'networktype=infrastructure'], (error, stdout, stderr) => {
+        const fullOutput = (stdout || '').trim() || (stderr || '').trim();
         if (error) {
-          resolve({ success: false, output: stderr || error.message });
+          let detail = fullOutput || error.message || 'Unknown netsh error';
+          if (detail.toLowerCase().includes("requires elevation") || detail.toLowerCase().includes("access is denied")) {
+            detail += "\n\n💡 Tip: Run PuriFier as Administrator to allow Windows filter modifications.";
+          }
+          resolve({ success: false, output: detail });
         } else {
-          resolve({ success: true, output: stdout.trim() || `Enforcement Executed: Blocked SSID '${ssid}' on Windows` });
+          resolve({ success: true, output: fullOutput || `Enforcement Executed: Blocked SSID '${ssid}' on Windows` });
         }
       });
     } else {
@@ -216,25 +223,31 @@ ipcMain.handle('execute-os-ban', async (event, banPayload) => {
       }
       if (bssid) {
         execFile('nmcli', ['device', 'wifi', 'block', 'bssid', bssid], (error, stdout, stderr) => {
+          const fullOutput = (stdout || '').trim() || (stderr || '').trim();
           if (error) {
             if (ssid) {
               execFile('nmcli', ['connection', 'delete', ssid], (err2, out2, errOut2) => {
-                if (err2) resolve({ success: false, output: errOut2 || err2.message });
-                else resolve({ success: true, output: out2.trim() || `Enforcement Executed: Deleted connection '${ssid}' on Linux` });
+                const subOutput = (out2 || '').trim() || (errOut2 || '').trim();
+                if (err2) {
+                  resolve({ success: false, output: subOutput || err2.message || 'Failed to delete connection on Linux' });
+                } else {
+                  resolve({ success: true, output: subOutput || `Enforcement Executed: Deleted connection '${ssid}' on Linux` });
+                }
               });
             } else {
-              resolve({ success: false, output: stderr || error.message });
+              resolve({ success: false, output: fullOutput || error.message || 'Failed to block BSSID on Linux' });
             }
           } else {
-            resolve({ success: true, output: stdout.trim() || `Enforcement Executed: Blocked BSSID '${bssid}' on Linux` });
+            resolve({ success: true, output: fullOutput || `Enforcement Executed: Blocked BSSID '${bssid}' on Linux` });
           }
         });
       } else if (ssid) {
         execFile('nmcli', ['device', 'wifi', 'block', 'bssid', bssid], (error, stdout, stderr) => {
+          const fullOutput = (stdout || '').trim() || (stderr || '').trim();
           if (error) {
-            resolve({ success: false, output: stderr || error.message });
+            resolve({ success: false, output: fullOutput || error.message || 'Failed to block SSID on Linux' });
           } else {
-            resolve({ success: true, output: stdout.trim() || `Enforcement Executed: Blocked BSSID '${bssid}' on Linux` });
+            resolve({ success: true, output: fullOutput || `Enforcement Executed: Blocked BSSID '${bssid}' on Linux` });
           }
         });
       } else {

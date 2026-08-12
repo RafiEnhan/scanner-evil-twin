@@ -476,6 +476,84 @@
     </div>
   </div>
 
+  <!-- Threat Alert Floating Stack Modal -->
+  <div id="threat-alert-modal" class="modal-overlay hidden">
+    <div class="threat-alert-stack-container">
+      
+      <!-- Stack Background Preview Cards (Visual 3D Stack Effect) -->
+      <div id="threat-stack-bg-2" class="threat-stack-card-bg card-bg-2 hidden"></div>
+      <div id="threat-stack-bg-1" class="threat-stack-card-bg card-bg-1 hidden"></div>
+
+      <!-- Active Front Threat Alert Card -->
+      <div class="modal-content glass-panel threat-alert-card">
+        <div class="threat-modal-header">
+          <div class="threat-badge-group">
+            <span class="threat-alert-badge">ANOMALY DETECTED</span>
+            <span id="threat-stack-counter" class="threat-stack-counter hidden">1 of 2 Pending</span>
+          </div>
+        </div>
+
+        <div class="threat-modal-body">
+          <div class="threat-target-info">
+            <h2 id="threat-alert-ssid">ROGUE_EVIL_TWIN_SIMULATED</h2>
+            <span id="threat-alert-bssid" class="modal-bssid">de:ad:be:ef:00:01</span>
+          </div>
+
+          <div class="threat-verdict-banner">
+            <span class="verdict-banner-title">CRITICAL LAYER-2 IMPERSONATION THREAT</span>
+            <div class="threat-banner-stats">
+              <span id="threat-alert-score" class="threat-score-val">65.6%</span>
+              <span class="threat-score-sub">Threat Score</span>
+            </div>
+          </div>
+
+          <div class="modal-grid threat-metrics-grid">
+            <div class="metric-item">
+              <span class="m-title">CHANNEL / RSSI</span>
+              <span id="threat-alert-ch-rssi" class="m-val">CH 6 (-28 dBm)</span>
+              <span class="m-sub">Airspace Frequency</span>
+            </div>
+
+            <div class="metric-item">
+              <span class="m-title">CLOCK SKEW (θ)</span>
+              <span id="threat-alert-skew" class="m-val">159.38 ppm</span>
+              <span class="m-sub">Hardware Drift</span>
+            </div>
+
+            <div class="metric-item">
+              <span class="m-title">BEACON JITTER (σ²)</span>
+              <span id="threat-alert-jitter" class="m-val">38.32</span>
+              <span class="m-sub">Timing Variance</span>
+            </div>
+
+            <div class="metric-item">
+              <span class="m-title">SEQ ENTROPY</span>
+              <span id="threat-alert-entropy" class="m-val">2.70</span>
+              <span class="m-sub">Discontinuity</span>
+            </div>
+          </div>
+
+          <div class="modal-cmd-section">
+            <span class="cmd-label">AUTOMATED OS BAN COMMAND:</span>
+            <code id="threat-alert-cmd">netsh wlan add filter permission=block ssid="..." networktype=infrastructure</code>
+          </div>
+
+          <div class="threat-action-buttons">
+            <button id="btn-threat-ignore" class="btn-threat-action btn-threat-ignore">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              IGNORE
+            </button>
+            <button id="btn-threat-block" class="btn-threat-action btn-threat-block">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              BLOCK AP
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <script src="renderer.js"></script>
 </body>
 </html>

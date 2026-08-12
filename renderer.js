@@ -64,6 +64,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalCmdText = document.getElementById('modal-cmd-text');
   const modalBtnBan = document.getElementById('modal-btn-ban');
 
+  const threatAlertModal = document.getElementById('threat-alert-modal');
+  const threatStackBg1 = document.getElementById('threat-stack-bg-1');
+  const threatStackBg2 = document.getElementById('threat-stack-bg-2');
+  const threatStackCounter = document.getElementById('threat-stack-counter');
+  const threatAlertSsid = document.getElementById('threat-alert-ssid');
+  const threatAlertBssid = document.getElementById('threat-alert-bssid');
+  const threatAlertScore = document.getElementById('threat-alert-score');
+  const threatAlertChRssi = document.getElementById('threat-alert-ch-rssi');
+  const threatAlertSkew = document.getElementById('threat-alert-skew');
+  const threatAlertJitter = document.getElementById('threat-alert-jitter');
+  const threatAlertEntropy = document.getElementById('threat-alert-entropy');
+  const threatAlertCmd = document.getElementById('threat-alert-cmd');
+  const btnThreatIgnore = document.getElementById('btn-threat-ignore');
+  const btnThreatBlock = document.getElementById('btn-threat-block');
+
+  const threatQueueMap = new Map();
+  const threatIgnoreCountMap = new Map(); // key = bssidKey, value = ignore count (int)
+  const bannedNetworkSet = new Set(); // key = bssidKey (set of banned BSSIDs)
+
+  function markNetworkAsBanned(bssid) {
+    const bssidKey = bssid ? bssid.toLowerCase().trim() : '00:00:00:00:00:00';
+    bannedNetworkSet.add(bssidKey);
+    threatQueueMap.delete(bssidKey);
+    renderThreatAlertStack();
+  }
+
   let activeBanCmd = "";
   let activeBanSsid = "";
   let activeBanBssid = "";
@@ -210,18 +236,113 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isRed) {
       updateForensicsPanel(data);
-      if (cmdBox && cmdText) {
-        cmdBox.style.display = 'flex';
-        cmdText.innerText = data.os_ban_cmd;
+      if (cmdBox) {
+        cmdBox.style.display = 'none'; // Sesuai permintaan, tombol ban tidak di bawah lagi
       }
-      activeBanCmd = data.os_ban_cmd;
-      activeBanSsid = data.ssid;
-      activeBanBssid = data.bssid;
 
-      if (window.purifierAPI && data.os_ban_cmd && !data.os_ban_cmd.startsWith('N/A')) {
-        window.purifierAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid });
+      const threatBssidKey = data.bssid ? data.bssid.toLowerCase().trim() : '00:00:00:00:00:00';
+      const currentIgnoreCount = threatIgnoreCountMap.get(threatBssidKey) || 0;
+      const isAlreadyBanned = bannedNetworkSet.has(threatBssidKey);
+
+      // Jika jaringan ini belum di-ban dan belum di-ignore 3 kali, tampilkan popup modal
+      if (currentIgnoreCount < 3 && !isAlreadyBanned) {
+        if (!threatQueueMap.has(threatBssidKey)) {
+          threatQueueMap.set(threatBssidKey, Object.assign({}, data));
+        } else {
+          const existing = threatQueueMap.get(threatBssidKey);
+          existing.rssi = data.rssi;
+          existing.threat_score = data.threat_score;
+          existing.clock_skew_ppm = data.clock_skew_ppm;
+          existing.jitter_variance = data.jitter_variance;
+          existing.sequence_entropy = data.sequence_entropy;
+          existing.os_ban_cmd = data.os_ban_cmd;
+        }
+
+        renderThreatAlertStack();
       }
     }
+  }
+
+  function renderThreatAlertStack() {
+    const queue = Array.from(threatQueueMap.values());
+    if (queue.length === 0) {
+      if (threatAlertModal) threatAlertModal.classList.add('hidden');
+      return;
+    }
+
+    const activeThreat = queue[0];
+    const activeBssidKey = activeThreat.bssid ? activeThreat.bssid.toLowerCase().trim() : '00:00:00:00:00:00';
+    const ignoreCount = threatIgnoreCountMap.get(activeBssidKey) || 0;
+
+    if (threatAlertSsid) threatAlertSsid.innerText = activeThreat.ssid;
+    if (threatAlertBssid) threatAlertBssid.innerText = activeThreat.bssid;
+    if (threatAlertScore) threatAlertScore.innerText = `${(activeThreat.threat_score * 100).toFixed(1)}%`;
+    if (threatAlertChRssi) threatAlertChRssi.innerText = `CH ${activeThreat.resolvedChannel || activeThreat.channel || 6} (${activeThreat.rssi} dBm)`;
+    if (threatAlertSkew) threatAlertSkew.innerText = `${activeThreat.clock_skew_ppm} ppm`;
+    if (threatAlertJitter) threatAlertJitter.innerText = `${activeThreat.jitter_variance}`;
+    if (threatAlertEntropy) threatAlertEntropy.innerText = `${activeThreat.sequence_entropy}`;
+    if (threatAlertCmd) threatAlertCmd.innerText = activeThreat.os_ban_cmd;
+
+    if (threatStackCounter) {
+      if (queue.length > 1) {
+        threatStackCounter.classList.remove('hidden');
+        threatStackCounter.innerText = `1 of ${queue.length} Pending Threats`;
+      } else {
+        threatStackCounter.classList.add('hidden');
+      }
+    }
+
+    if (threatStackBg1) {
+      if (queue.length > 1) threatStackBg1.classList.remove('hidden');
+      else threatStackBg1.classList.add('hidden');
+    }
+
+    if (threatStackBg2) {
+      if (queue.length > 2) threatStackBg2.classList.remove('hidden');
+      else threatStackBg2.classList.add('hidden');
+    }
+
+    if (btnThreatIgnore) {
+      btnThreatIgnore.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        IGNORE (${ignoreCount}/3)
+      `;
+      btnThreatIgnore.title = `Ignore this alert (${ignoreCount}/3). Mutes popups permanently for this network after 3 ignores.`;
+      btnThreatIgnore.onclick = () => {
+        dismissActiveThreat(activeThreat.bssid, true); // true = ignored action
+      };
+    }
+
+    if (btnThreatBlock) {
+      btnThreatBlock.onclick = () => {
+        markNetworkAsBanned(activeThreat.bssid);
+        if (window.purifierAPI && activeThreat.os_ban_cmd && !activeThreat.os_ban_cmd.startsWith("N/A")) {
+          window.purifierAPI.executeOsBan(activeThreat.os_ban_cmd, { ssid: activeThreat.ssid, bssid: activeThreat.bssid }).then(res => {
+            if (res.success) {
+              alert(`OS BAN EXECUTED:\n\n${res.output}`);
+            } else {
+              alert(`OS BAN FAILED:\n\n${res.output}`);
+            }
+          });
+        }
+      };
+    }
+
+    if (threatAlertModal && threatAlertModal.classList.contains('hidden')) {
+      threatAlertModal.classList.remove('hidden');
+    }
+  }
+
+  function dismissActiveThreat(bssid, isIgnoredAction = false) {
+    const bssidKey = bssid ? bssid.toLowerCase().trim() : '00:00:00:00:00:00';
+
+    if (isIgnoredAction) {
+      const count = (threatIgnoreCountMap.get(bssidKey) || 0) + 1;
+      threatIgnoreCountMap.set(bssidKey, count);
+    }
+
+    threatQueueMap.delete(bssidKey);
+    renderThreatAlertStack();
   }
 
   function updateRadarBlips() {
@@ -596,9 +717,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnIsolateAp) {
       btnIsolateAp.onclick = () => {
+        markNetworkAsBanned(data.bssid);
         if (data.os_ban_cmd && !data.os_ban_cmd.startsWith("N/A") && window.purifierAPI) {
           window.purifierAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid }).then(res => {
-            alert(res.output || "Mitigation Executed.");
+            if (res.success) {
+              alert(`OS BAN EXECUTED:\n\n${res.output}`);
+            } else {
+              alert(`OS BAN FAILED:\n\n${res.output}`);
+            }
           });
         } else {
           alert(`Isolating ${data.ssid} (${data.bssid}).`);
@@ -634,9 +760,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnForceExec) {
     btnForceExec.addEventListener('click', () => {
+      markNetworkAsBanned(activeBanBssid);
       if (activeBanCmd && window.purifierAPI) {
         window.purifierAPI.executeOsBan(activeBanCmd, { ssid: activeBanSsid, bssid: activeBanBssid }).then(res => {
-          alert(res.output || "Enforcement Executed.");
+          if (res.success) {
+            alert(`OS BAN EXECUTED:\n\n${res.output}`);
+          } else {
+            alert(`OS BAN FAILED:\n\n${res.output}`);
+          }
         });
       }
     });
@@ -678,9 +809,14 @@ document.addEventListener('DOMContentLoaded', () => {
     modalCmdText.innerText = data.os_ban_cmd;
 
     modalBtnBan.onclick = () => {
+      markNetworkAsBanned(data.bssid);
       if (data.os_ban_cmd && !data.os_ban_cmd.startsWith("N/A") && window.purifierAPI) {
         window.purifierAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid }).then(res => {
-          alert(res.output || "Enforcement Command Executed.");
+          if (res.success) {
+            alert(`OS BAN EXECUTED:\n\n${res.output}`);
+          } else {
+            alert(`OS BAN FAILED:\n\n${res.output}`);
+          }
         });
       } else {
         alert("Action not required for Verified Safe AP.");

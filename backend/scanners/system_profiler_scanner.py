@@ -1,4 +1,5 @@
 import sys
+import re
 import time
 import subprocess
 import hashlib
@@ -82,10 +83,24 @@ def scan_live_mac_airspace():
                 s = line.strip()
                 if not s:
                     continue
-                parts = s.split(':')
+
+                # [FIX BUG-003] nmcli -t mode meng-escape karakter ':' di dalam
+                # nilai field sebagai '\:'. Karena BSSID menggunakan ':' sebagai
+                # separator oktet yang TIDAK di-escape, kita harus split hanya pada
+                # ':' yang tidak didahului backslash agar SSID dengan ':' tidak
+                # menggeser indeks dan merusak parsing BSSID.
+                parts = re.split(r'(?<!\\):', s)
+
                 if len(parts) >= 4:
-                    ssid = parts[0].strip() or "Hidden Network"
-                    bssid = ":".join(parts[1:7]).strip().lower() if len(parts) >= 7 else parts[1].strip().lower()
+                    # Kembalikan escaped colon di SSID menjadi ':' biasa
+                    ssid = parts[0].replace('\\:', ':').strip() or "Hidden Network"
+
+                    # BSSID selalu terdiri dari 6 oktet hex di posisi parts[1:7]
+                    if len(parts) >= 7:
+                        bssid = ":".join(p.strip() for p in parts[1:7]).lower()
+                    else:
+                        bssid = parts[1].strip().lower()
+
                     try:
                         sig_pct = int(parts[-2].strip())
                         rssi_val = int((sig_pct / 2.0) - 100)

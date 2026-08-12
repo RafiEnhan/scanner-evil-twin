@@ -8,6 +8,15 @@ import numpy as np
 from collections import defaultdict, deque
 
 def log_uncaught_exception(exctype, value, tb):
+    """
+    Handler global untuk mencatat exception Python yang tidak ditangkap (uncaught exception).
+    Mencetak pesan error dan traceback lengkap ke sys.stderr agar terekam di log Electron.
+
+    Args:
+        exctype (type): Tipe exception yang terjadi.
+        value (BaseException): Objek instance exception.
+        tb (traceback): Object traceback panggilan fungsi.
+    """
     print(f"[Python Uncaught Exception]: {exctype.__name__}: {value}", file=sys.stderr, flush=True)
     traceback.print_exception(exctype, value, tb, file=sys.stderr)
 
@@ -23,17 +32,43 @@ def transform_features_for_model(skew_ppm, jitter_var, entropy_bits, rssi_diff_d
     """
     Mengonversi unit fitur fisik nyata (PPM, variance, entropy, dBm) ke dalam
     ruang skala numerik (feature space) yang diharapkan oleh model ONNX AWID.
+
+    Gate anomali menggunakan combined anomaly score berbasis normalisasi kedua fitur.
+    AP dianggap benar-benar anomali hanya jika skor gabungan > 3.5 (keduanya
+    harus signifikan secara bersamaan).
+
+    Skala nilai normal tipikal:
+      - Legitimate AP: skew ~10-25 PPM, jitter ~10-11 → score ≈ 0.5+0.73 = 1.23
+      - Borderline AP: skew ~85 PPM, jitter ~12  → score ≈ 1.7+0.8  = 2.5  (SAFE)
+      - Rogue AP:      skew ~150 PPM, jitter ~40 → score ≈ 3.0+2.67 = 5.67 (ANOMALI)
+
+    Args:
+        skew_ppm (float): Nilai clock skew AP dalam satuan PPM.
+        jitter_var (float): Nilai variansi beacon jitter AP.
+        entropy_bits (float): Nilai Shannon entropy dari sekuens frame (dalam bit).
+        rssi_diff_dbm (float): Selisih kekuatan sinyal RSSI AP terhadap rerata airspace (dBm).
+
+    Returns:
+        np.ndarray: Array numpy shape (1, 4) tipe float32 berisi [m_skew, m_jitter, m_entropy, m_rssi]
+                    yang siap diumpankan ke inferensi ONNX model.
     """
-    if skew_ppm > 80.0 or jitter_var > 15.0:
-        m_skew = max(150000.0, skew_ppm * 1650.0)
-        m_jitter = min(0.0001, max(0.00001, jitter_var * 0.0000012))
+    # Skor anomali gabungan: normalisasi masing-masing fitur lalu dijumlahkan
+    skew_norm  = skew_ppm / 50.0     # 50 PPM = baseline atas AP normal
+    jitter_norm = jitter_var / 15.0  # 15 = baseline atas jitter normal
+    combined_anomaly_score = skew_norm + jitter_norm
+
+    if combined_anomaly_score > 3.5:
+        # Jalur AWID scale: keduanya signifikan secara bersamaan → anomali nyata
+        m_skew    = max(150000.0, skew_ppm * 1650.0)
+        m_jitter  = min(0.0001, max(0.00001, jitter_var * 0.0000012))
         m_entropy = min(1.0, entropy_bits * 0.2)
-        m_rssi = min(4.5, max(1.0, rssi_diff_dbm * 0.12))
+        m_rssi    = min(4.5, max(1.0, rssi_diff_dbm * 0.12))
     else:
-        m_skew = float(skew_ppm)
-        m_jitter = float(jitter_var)
+        # Jalur raw: nilai fisik normal, teruskan apa adanya ke model
+        m_skew    = float(skew_ppm)
+        m_jitter  = float(jitter_var)
         m_entropy = float(entropy_bits)
-        m_rssi = float(rssi_diff_dbm)
+        m_rssi    = float(rssi_diff_dbm)
     return np.array([[m_skew, m_jitter, m_entropy, m_rssi]], dtype=np.float32)
 
 
@@ -84,7 +119,11 @@ class PuriFierDaemon:
                                       untuk menghitung rssi_diff. Default None (diff=0).
             channel (str): Channel frekuensi jaringan (1-11, 36, 44, 149).
         """
-        self.seq_history[bssid].append(seq_val)
+        # [FIX BUG-004] Hanya tambahkan ke histori jika seq_val adalah data nyata
+        # (bukan None). seq_val=None berarti TShark belum menangkap data untuk
+        # BSSID ini — mengisi deque dengan 0 palsu akan meracuni entropy histogram.
+        if seq_val is not None:
+            self.seq_history[bssid].append(seq_val)
 
         high_res_now = time.perf_counter()
         self.arrival_history[bssid].append(high_res_now)
@@ -129,7 +168,7 @@ class PuriFierDaemon:
                 "bssid": bssid,
                 "rssi": rssi,
                 "channel": str(channel),
-                "sequence_control": seq_val,
+                "sequence_control": seq_val if seq_val is not None else 0,
                 "clock_skew_ppm": skew,
                 "jitter_variance": jitter,
                 "sequence_entropy": entropy,
@@ -242,12 +281,14 @@ class PuriFierDaemon:
                 channel = net.get("channel", "6")
                 tsf_val = net.get("tsf", int(now_t * 1e6))
 
-                # Pure TShark SC values without artificial generator fallback
+                # [FIX BUG-004] Gunakan None sebagai sentinel jika TShark belum
+                # menangkap seq number untuk BSSID ini. Nilai 0 tidak dipakai lagi
+                # agar seq_history tidak tercemar dan entropy tetap akurat.
                 if bssid in self.real_tshark_sc:
                     seq_val = self.real_tshark_sc.pop(bssid)
                     engine = f"{net.get('engine', 'Native OS')} + TShark Real SC"
                 else:
-                    seq_val = 0
+                    seq_val = None  # Belum ada data TShark — tidak dimasukkan ke histori
                     engine = net.get("engine", "Native OS Airspace Scanner")
 
                 self._generate_event(frame_seq, ssid, bssid, rssi, seq_val, tsf_val, now_t, engine, mean_rssi=airspace_mean_rssi, channel=channel)

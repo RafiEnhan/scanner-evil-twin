@@ -203,7 +203,6 @@ def start_channel_hopper(wlan_helper_path, guid, channels=None, interval_sec=0.2
     t.start()
     return t
 
-import re
 
 def detect_wifi_interface(tshark_path):
     r"""
