@@ -40,14 +40,14 @@ def scan_live_mac_airspace():
                 if s.startswith("SSID "):
                     parts = s.split(":", 1)
                     if len(parts) > 1:
-                        current_ssid = parts[1].strip()
+                        current_ssid = parts[1].strip() or "Hidden Network"
                 elif s.startswith("BSSID "):
                     parts = s.split(":", 1)
                     if len(parts) > 1:
                         bssid_val = parts[1].strip()
-                        if current_ssid:
+                        if current_ssid is not None:
                             current_net = {
-                                "ssid": current_ssid,
+                                "ssid": current_ssid or "Hidden Network",
                                 "bssid": bssid_val.lower(),
                                 "rssi": -70,
                                 "channel": "6"

@@ -140,12 +140,16 @@ document.addEventListener('DOMContentLoaded', () => {
     totalPackets++;
     elemTotal.innerText = totalPackets.toLocaleString();
 
+    if (!data.ssid || !data.ssid.trim()) {
+      data.ssid = "Hidden Network";
+    }
+
     const isRed = data.verdict.includes('RED');
     const isAmber = data.verdict.includes('AMBER');
     const isGreen = data.verdict.includes('GREEN');
 
-    const ssidKey = data.ssid.toLowerCase().trim();
-    const storageKey = isRed ? `${ssidKey}_threat_${data.bssid.toLowerCase()}` : ssidKey;
+    const bssidKey = data.bssid ? data.bssid.toLowerCase().trim() : '00:00:00:00:00:00';
+    const storageKey = isRed ? `${bssidKey}_threat` : bssidKey;
 
     data.resolvedChannel = getChannelNumber(data);
     data.lastSeen = Date.now();
@@ -304,7 +308,8 @@ document.addEventListener('DOMContentLoaded', () => {
       channelSsidMap.set(ch, new Map());
     }
     const chMap = channelSsidMap.get(ch);
-    chMap.set(data.ssid, { ssid: data.ssid, status: currentStatus, data: data, rssi: currentRssi });
+    const bssidKey = data.bssid ? data.bssid.toLowerCase().trim() : '00:00:00:00:00:00';
+    chMap.set(bssidKey, { ssid: data.ssid, status: currentStatus, data: data, rssi: currentRssi });
 
     const barItemEl = document.querySelector(`.spectrum-bar-item[data-ch="${ch}"]`);
     const groupedContainer = document.getElementById(`grouped-bars-${ch}`);
