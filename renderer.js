@@ -197,8 +197,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const firstRow = elemTbody.querySelector('.empty-row');
     if (firstRow) firstRow.remove();
 
+    let apRowClass = '';
+    if (isRed) apRowClass = 'threat-ap';
+    else if (isAmber) apRowClass = 'dos-ap';
+
     const tr = document.createElement('tr');
-    tr.className = `ap-row ${isRed ? 'threat-ap' : ''}`;
+    tr.className = `ap-row ${apRowClass}`;
     let tagClass = 'text-green';
     if (isAmber) tagClass = 'text-amber';
     if (isRed) tagClass = 'text-red';
@@ -219,12 +223,23 @@ document.addEventListener('DOMContentLoaded', () => {
       <td><button class="btn-isolate" style="font-size:9px;">View</button></td>
     `;
 
-    tr.addEventListener('click', () => {
+    tr.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-isolate')) return;
       document.querySelectorAll('.ap-row').forEach(r => r.classList.remove('selected-ap'));
       tr.classList.add('selected-ap');
       updateForensicsPanel(data);
-      openApDetailModal(data);
     });
+
+    const btnView = tr.querySelector('.btn-isolate');
+    if (btnView) {
+      btnView.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.ap-row').forEach(r => r.classList.remove('selected-ap'));
+        tr.classList.add('selected-ap');
+        updateForensicsPanel(data);
+        openApDetailModal(data);
+      });
+    }
 
     elemTbody.prepend(tr);
     if (elemTbody.children.length > 50) {
@@ -233,8 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
     elemRowCount.innerText = `${ssidDataMap.size} Unique Networks Monitored`;
 
     updateRadarBlips();
-
-    appendTerminalLog(data, cleanVerdict, isRed, isAmber);
 
     if (isRed || isAmber) {
       updateForensicsPanel(data);
@@ -455,7 +468,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const ch = data.resolvedChannel;
     const currentRssi = data.rssi;
     const isRed = data.verdict.includes('RED');
-    const currentStatus = isRed ? 'crit' : 'clear';
+    const isAmber = data.verdict.includes('AMBER');
+    let currentStatus = 'clear';
+    if (isRed) currentStatus = 'crit';
+    else if (isAmber) currentStatus = 'warn';
 
     if (!channelSsidMap.has(ch)) {
       channelSsidMap.set(ch, new Map());
@@ -474,8 +490,13 @@ document.addEventListener('DOMContentLoaded', () => {
       items.sort((a, b) => {
         const aRed = a.status === 'crit' || a.data.verdict.includes('RED');
         const bRed = b.status === 'crit' || b.data.verdict.includes('RED');
+        const aAmber = a.status === 'warn' || a.data.verdict.includes('AMBER');
+        const bAmber = b.status === 'warn' || b.data.verdict.includes('AMBER');
+
         if (aRed && !bRed) return -1;
         if (!aRed && bRed) return 1;
+        if (aAmber && !bAmber) return -1;
+        if (!aAmber && bAmber) return 1;
         return b.rssi - a.rssi;
       });
 
@@ -500,6 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
         barWrapper.className = 'wifi-slim-bar';
 
         const isItemRed = item.status === 'crit' || item.data.verdict.includes('RED');
+        const isItemAmber = item.status === 'warn' || item.data.verdict.includes('AMBER');
         
         let rssiClass = 'rssi-strong';
         if (item.rssi < -55 && item.rssi >= -70) rssiClass = 'rssi-medium';
@@ -508,11 +530,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const heightPct = Math.max(22, Math.min(96, ((item.rssi + 105) / 75) * 100));
 
+        let barClass = rssiClass;
+        if (isItemRed) barClass = 'threat-rogue';
+        else if (isItemAmber) barClass = 'threat-dos';
+
         const barFill = document.createElement('div');
-        barFill.className = `slim-bar-fill ${isItemRed ? 'threat-rogue' : rssiClass}`;
+        barFill.className = `slim-bar-fill ${barClass}`;
         barFill.style.height = `${heightPct}%`;
 
         const cleanVerdict = item.data.verdict.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+
+        let verdictTagClass = 'text-green';
+        if (isItemRed) verdictTagClass = 'text-red';
+        else if (isItemAmber) verdictTagClass = 'text-amber';
 
         const tooltip = document.createElement('div');
         tooltip.className = 'bar-tooltip';
@@ -520,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <strong>${escapeHtml(item.ssid)}</strong><br>
           <span style="font-family:var(--font-mono); opacity:0.8;">${item.data.bssid}</span><br>
           Signal: <strong>${item.rssi} dBm</strong> (~${item.data.est_dist || '2.8'}m)<br>
-          Verdict: <span class="${isItemRed ? 'text-red' : 'text-green'}">${escapeHtml(cleanVerdict)}</span>
+          Verdict: <span class="${verdictTagClass}">${escapeHtml(cleanVerdict)}</span>
         `;
 
         barWrapper.appendChild(tooltip);
