@@ -98,16 +98,11 @@
       
       <div class="glass-panel spectrum-panel">
         <div class="panel-header">
-          <div class="header-title flex items-center gap-2">
+          <div class="header-title flex items-center">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
             </svg>
             <h3>2.4GHz / 5GHz SPECTRUM MATRIX (SSID PLOTTED BY CHANNEL)</h3>
-          </div>
-          <div class="spectrum-legend flex gap-3 text-xs">
-            <span class="legend-chip clear"><span class="dot"></span> Safe AP</span>
-            <span class="legend-chip warn"><span class="dot"></span> DoS Warning</span>
-            <span class="legend-chip crit"><span class="dot"></span> Evil Twin</span>
           </div>
         </div>
         
@@ -197,6 +192,64 @@
             <span class="ch-label">5G 149</span>
           </div>
         </div>
+
+        <!-- Static Comparison Chart Footer -->
+        <div class="spectrum-comparison-footer">
+          <div class="comparison-guide-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+            <span>SIGNAL & THREAT MATRIX GUIDE</span>
+          </div>
+
+          <div class="comparison-guide-items">
+            <div class="comparison-item" title="Sinyal Sangat Kuat (> -55 dBm)">
+              <div class="static-circle-demo rssi-strong"></div>
+              <div class="demo-text-box">
+                <span class="demo-label text-green">Strong Signal</span>
+                <span class="demo-sub">(&gt; -55dBm)</span>
+              </div>
+            </div>
+
+            <div class="comparison-item" title="Sinyal Sedang (-55 to -70 dBm)">
+              <div class="static-circle-demo rssi-medium"></div>
+              <div class="demo-text-box">
+                <span class="demo-label text-cyan">Medium Signal</span>
+                <span class="demo-sub">(-55 to -70dBm)</span>
+              </div>
+            </div>
+
+            <div class="comparison-item" title="Sinyal Agak Lemah (-70 to -82 dBm)">
+              <div class="static-circle-demo rssi-fair"></div>
+              <div class="demo-text-box">
+                <span class="demo-label text-yellow">Low</span>
+                <span class="demo-sub">(-70 to -82dBm)</span>
+              </div>
+            </div>
+
+            <div class="comparison-item" title="Sinyal Sangat Lemah (< -82 dBm)">
+              <div class="static-circle-demo rssi-weak"></div>
+              <div class="demo-text-box">
+                <span class="demo-label text-dim">Weak</span>
+                <span class="demo-sub">(&lt; -82dBm)</span>
+              </div>
+            </div>
+
+            <div class="comparison-item" title="Anomali DoS Detected">
+              <div class="static-circle-demo threat-dos"></div>
+              <div class="demo-text-box">
+                <span class="demo-label text-orange">DoS Threat</span>
+                <span class="demo-sub">Warning Pulse</span>
+              </div>
+            </div>
+
+            <div class="comparison-item" title="Evil Twin / Rogue AP Detected">
+              <div class="static-circle-demo threat-rogue"></div>
+              <div class="demo-text-box">
+                <span class="demo-label text-red">Evil Twin</span>
+                <span class="demo-sub">Danger Pulse</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="radar-details-grid">
@@ -240,7 +293,6 @@
               <h3 id="forensic-ssid" class="text-lg">Select an AP row</h3>
               <span id="forensic-bssid" class="text-mono-sub">00:00:00:00:00:00</span>
             </div>
-            <button class="btn-isolate" id="btn-isolate-ap">ISOLATE</button>
           </div>
 
           <div class="forensic-metrics-grid">

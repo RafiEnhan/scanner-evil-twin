@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const forensicEntropyBar = document.getElementById('forensic-entropy-bar');
   const forensicEntropyVal = document.getElementById('forensic-entropy-val');
   const forensicSkewVal = document.getElementById('forensic-skew-val');
-  const btnIsolateAp = document.getElementById('btn-isolate-ap');
 
   const modalOverlay = document.getElementById('detail-modal');
   const modalCloseBtn = document.getElementById('modal-close-btn');
@@ -220,17 +219,17 @@ document.addEventListener('DOMContentLoaded', () => {
       <td>${data.sequence_entropy}</td>
       <td><strong class="${tagClass}">${(data.threat_score * 100).toFixed(1)}%</strong></td>
       <td><span class="${tagClass}">${escapeHtml(cleanVerdict)}</span></td>
-      <td><button class="btn-isolate" style="font-size:9px;">View</button></td>
+      <td><button class="btn-view-ap" style="font-size:9px;">View</button></td>
     `;
 
     tr.addEventListener('click', (e) => {
-      if (e.target.closest('.btn-isolate')) return;
+      if (e.target.closest('.btn-view-ap')) return;
       document.querySelectorAll('.ap-row').forEach(r => r.classList.remove('selected-ap'));
       tr.classList.add('selected-ap');
       updateForensicsPanel(data);
     });
 
-    const btnView = tr.querySelector('.btn-isolate');
+    const btnView = tr.querySelector('.btn-view-ap');
     if (btnView) {
       btnView.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -700,7 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>CH ${data.resolvedChannel || data.channel || 6}</td>
         <td>${data.rssi} dBm</td>
         <td><span class="${tagClass}">${escapeHtml(cleanVerdict)}</span></td>
-        <td><button class="btn-isolate" style="font-size:9px;">Inspect</button></td>
+        <td><button class="btn-view-ap" style="font-size:9px;">Inspect</button></td>
       `;
 
       tr.addEventListener('click', () => {
@@ -776,23 +775,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (forensicEntropyVal) forensicEntropyVal.innerText = `${data.sequence_entropy} (${entropyVal > 0.4 ? 'ABNORMAL' : 'NORMAL'})`;
 
     if (forensicSkewVal) forensicSkewVal.innerText = `${data.clock_skew_ppm > 0 ? '+' : ''}${data.clock_skew_ppm} ppm`;
-
-    if (btnIsolateAp) {
-      btnIsolateAp.onclick = () => {
-        markNetworkAsBanned(data.bssid);
-        if (data.os_ban_cmd && !data.os_ban_cmd.startsWith("N/A") && window.purifierAPI) {
-          window.purifierAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid }).then(res => {
-            if (res.success) {
-              alert(`OS BAN EXECUTED:\n\n${res.output}`);
-            } else {
-              alert(`OS BAN FAILED:\n\n${res.output}`);
-            }
-          });
-        } else {
-          alert(`Isolating ${data.ssid} (${data.bssid}).`);
-        }
-      };
-    }
   }
 
   if (btnForceExec) {
