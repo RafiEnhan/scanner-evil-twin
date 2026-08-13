@@ -1,0 +1,17 @@
+# Dependensi Python untuk PuriFier Scanner Evil Twin
+# Instalasi: pip install -r requirements.txt
+
+# --- Core / Runtime Dependencies (Inference Backend) ---
+numpy>=1.21.0
+onnxruntime>=1.14.0
+joblib>=1.2.0
+
+# --- Training, Evaluation & Model Export (Dataset & ML Engineering) ---
+pandas>=1.5.0
+scikit-learn>=1.2.0
+skl2onnx>=1.14.0
+onnx>=1.13.0
+openpyxl>=3.1.0
+
+# --- Packaging / Executable Build (Opsional) ---
+pyinstaller>=5.10.0
