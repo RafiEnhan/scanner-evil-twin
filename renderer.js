@@ -78,6 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const threatAlertCmd = document.getElementById('threat-alert-cmd');
   const btnThreatIgnore = document.getElementById('btn-threat-ignore');
   const btnThreatBlock = document.getElementById('btn-threat-block');
+  const threatVerdictTitle = document.getElementById('threat-verdict-title');
+  const threatAlertBadge = document.querySelector('.threat-alert-badge');
 
   const threatQueueMap = new Map();
   const threatIgnoreCountMap = new Map(); // key = bssidKey, value = ignore count (int)
@@ -234,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     appendTerminalLog(data, cleanVerdict, isRed, isAmber);
 
-    if (isRed) {
+    if (isRed || isAmber) {
       updateForensicsPanel(data);
       if (cmdBox) {
         cmdBox.style.display = 'none'; // Sesuai permintaan, tombol ban tidak di bawah lagi
@@ -256,6 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
           existing.jitter_variance = data.jitter_variance;
           existing.sequence_entropy = data.sequence_entropy;
           existing.os_ban_cmd = data.os_ban_cmd;
+          existing.verdict = data.verdict;
+          existing.ground_truth = data.ground_truth;
         }
 
         renderThreatAlertStack();
@@ -274,6 +278,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeBssidKey = activeThreat.bssid ? activeThreat.bssid.toLowerCase().trim() : '00:00:00:00:00:00';
     const ignoreCount = threatIgnoreCountMap.get(activeBssidKey) || 0;
 
+    const isDos = (activeThreat.ground_truth === 'dos') || (activeThreat.verdict && activeThreat.verdict.includes('DOS'));
+
+    if (threatVerdictTitle) {
+      if (isDos) {
+        threatVerdictTitle.innerText = "LAYER-2 DENIAL OF SERVICE (DOS) WARNING";
+        threatVerdictTitle.style.color = "var(--accent-amber)";
+      } else {
+        threatVerdictTitle.innerText = "CRITICAL LAYER-2 IMPERSONATION THREAT";
+        threatVerdictTitle.style.color = "var(--accent-red)";
+      }
+    }
+
+    if (threatAlertBadge) {
+      if (isDos) {
+        threatAlertBadge.innerText = "DOS ANOMALY DETECTED";
+        threatAlertBadge.style.backgroundColor = "rgba(255, 183, 3, 0.2)";
+        threatAlertBadge.style.color = "var(--accent-amber)";
+        threatAlertBadge.style.borderColor = "var(--accent-amber)";
+      } else {
+        threatAlertBadge.innerText = "EVIL TWIN DETECTED";
+        threatAlertBadge.style.backgroundColor = "rgba(239, 68, 68, 0.2)";
+        threatAlertBadge.style.color = "var(--accent-red)";
+        threatAlertBadge.style.borderColor = "var(--accent-red)";
+      }
+    }
+
     if (threatAlertSsid) threatAlertSsid.innerText = activeThreat.ssid;
     if (threatAlertBssid) threatAlertBssid.innerText = activeThreat.bssid;
     if (threatAlertScore) threatAlertScore.innerText = `${(activeThreat.threat_score * 100).toFixed(1)}%`;
@@ -286,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (threatStackCounter) {
       if (queue.length > 1) {
         threatStackCounter.classList.remove('hidden');
-        threatStackCounter.innerText = `1 of ${queue.length} Pending Threats`;
+        threatStackCounter.innerText = `1 of ${queue.length} Pending`;
       } else {
         threatStackCounter.classList.add('hidden');
       }

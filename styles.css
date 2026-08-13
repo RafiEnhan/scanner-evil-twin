@@ -1263,7 +1263,8 @@ html.light .terminal-title {
   z-index: 1000;
 }
 
-.modal-overlay.hidden { display: none; }
+.hidden { display: none !important; }
+.modal-overlay.hidden { display: none !important; }
 
 .modal-content {
   width: 90%;

@@ -143,15 +143,26 @@ class PuriFierDaemon:
 
         threat_score = round(float(self.model.predict_proba(feats)[0][1]), 4)
 
+        # Klasifikasi jenis ancaman berbasis domain fisik Layer 2 & Dataset AWID:
+        # Jika model ML mendeteksi anomali (threat_score > 0.50):
+        # 1. Evil Twin (Impersonation): Clock Skew hardware > 120.0 PPM (terdapat pemancar fisik
+        #    kedua dengan kristal osilator terpisah yang meng-clone BSSID/SSID AP legitimate).
+        # 2. DoS (Denial of Service / Flapping / Deauth Flooding): Clock Skew <= 120.0 PPM
+        #    (anomali didorong oleh lonjakan beacon jitter & sequence entropy akibat injeksi frame).
         if threat_score > 0.50:
-            verdict = "RED: THREAT DETECTED (AUTO-CONNECT BAN ENFORCED)"
             if sys.platform == "darwin":
                 ban_cmd = f"networksetup -removepreferredwirelessnetwork en0 '{ssid}'"
             elif sys.platform == "win32":
                 ban_cmd = f'netsh wlan add filter permission=block ssid="{ssid}" networktype=infrastructure'
             else:
                 ban_cmd = f"nmcli device wifi block bssid {bssid}"
-            ground_truth = "impersonation"
+
+            if skew > 120.0:
+                verdict = "RED: THREAT DETECTED (EVIL TWIN)"
+                ground_truth = "impersonation"
+            else:
+                verdict = "AMBER: DOS ANOMALY WARNING"
+                ground_truth = "dos"
         else:
             verdict = "GREEN: VERIFIED SAFE AP"
             ban_cmd = "N/A (Verified Trust)"
