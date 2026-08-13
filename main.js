@@ -107,6 +107,9 @@ function createWindow() {
         }
       } else if (trimmed) {
         logToFile(`[Python STDOUT]: ${trimmed}`);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('system-log-event', trimmed);
+        }
       }
     });
   });
@@ -116,6 +119,9 @@ function createWindow() {
     if (msg) {
       logToFile(`[Python STDERR]: ${msg}`);
       console.error(`[Python Terminal Message]: ${msg}`);
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('system-log-event', msg);
+      }
     }
   });
 

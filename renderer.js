@@ -349,8 +349,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.purifierAPI && activeThreat.os_ban_cmd && !activeThreat.os_ban_cmd.startsWith("N/A")) {
           window.purifierAPI.executeOsBan(activeThreat.os_ban_cmd, { ssid: activeThreat.ssid, bssid: activeThreat.bssid }).then(res => {
             if (res.success) {
+              appendSystemLog(`[+] OS BAN SUCCESS: Banned SSID "${activeThreat.ssid}" (${activeThreat.bssid})`);
               alert(`OS BAN EXECUTED:\n\n${res.output}`);
             } else {
+              appendSystemLog(`[!] OS BAN FAILED for "${activeThreat.ssid}": ${res.output}`);
               alert(`OS BAN FAILED:\n\n${res.output}`);
             }
           });
@@ -763,39 +765,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function appendTerminalLog(data, cleanVerdict, isRed, isAmber) {
-    if (!elemFeedContainer) return;
-
-    const timestamp = new Date().toLocaleTimeString();
-    const div = document.createElement('div');
-
-    if (isRed) {
-      div.className = 'log-entry blocked';
-      div.innerText = `[${timestamp}] BLOCKED: ${data.ssid} (${data.bssid}) - ${cleanVerdict} (Threat: ${(data.threat_score*100).toFixed(1)}%)`;
-    } else if (isAmber) {
-      div.className = 'log-entry warn';
-      div.innerText = `[${timestamp}] WARN: ${data.ssid} (${data.bssid}) - Layer 2 Anomaly (Skew: ${data.clock_skew_ppm}ppm)`;
-    } else {
-      div.className = 'log-entry info';
-      div.innerText = `[${timestamp}] SAFE: ${data.ssid} (${data.bssid}) - Verified Trust`;
-    }
-
-    elemFeedContainer.appendChild(div);
-    elemFeedContainer.scrollTop = elemFeedContainer.scrollHeight;
-
-    if (elemFeedContainer.children.length > 50) {
-      elemFeedContainer.removeChild(elemFeedContainer.firstChild);
-    }
-  }
-
   if (btnForceExec) {
     btnForceExec.addEventListener('click', () => {
       markNetworkAsBanned(activeBanBssid);
       if (activeBanCmd && window.purifierAPI) {
         window.purifierAPI.executeOsBan(activeBanCmd, { ssid: activeBanSsid, bssid: activeBanBssid }).then(res => {
           if (res.success) {
+            appendSystemLog(`[+] OS BAN SUCCESS: Banned SSID "${activeBanSsid}" (${activeBanBssid})`);
             alert(`OS BAN EXECUTED:\n\n${res.output}`);
           } else {
+            appendSystemLog(`[!] OS BAN FAILED for "${activeBanSsid}": ${res.output}`);
             alert(`OS BAN FAILED:\n\n${res.output}`);
           }
         });
@@ -843,8 +822,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.os_ban_cmd && !data.os_ban_cmd.startsWith("N/A") && window.purifierAPI) {
         window.purifierAPI.executeOsBan(data.os_ban_cmd, { ssid: data.ssid, bssid: data.bssid }).then(res => {
           if (res.success) {
+            appendSystemLog(`[+] OS BAN SUCCESS: Banned SSID "${data.ssid}" (${data.bssid})`);
             alert(`OS BAN EXECUTED:\n\n${res.output}`);
           } else {
+            appendSystemLog(`[!] OS BAN FAILED for "${data.ssid}": ${res.output}`);
             alert(`OS BAN FAILED:\n\n${res.output}`);
           }
         });
@@ -876,5 +857,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function appendSystemLog(msg) {
+    if (!elemFeedContainer || !msg) return;
+
+    const lines = String(msg).split('\n');
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+
+      const div = document.createElement('div');
+      div.className = 'log-entry info';
+
+      if (trimmed.includes('[!]') || trimmed.includes('Error') || trimmed.includes('FAILED') || trimmed.includes('Failure') || trimmed.includes('error')) {
+        div.className = 'log-entry warn';
+      } else if (trimmed.includes('[+]') || trimmed.includes('SUCCESS') || trimmed.includes('Active') || trimmed.includes('Loaded')) {
+        div.className = 'log-entry clear';
+      }
+
+      const timestamp = new Date().toLocaleTimeString();
+      div.innerText = `[${timestamp}] ${trimmed}`;
+      elemFeedContainer.appendChild(div);
+    });
+
+    if (elemFeedContainer.children.length > 100) {
+      elemFeedContainer.removeChild(elemFeedContainer.firstChild);
+    }
+    elemFeedContainer.scrollTop = elemFeedContainer.scrollHeight;
+  }
+
+  if (window.purifierAPI && window.purifierAPI.onSystemLog) {
+    window.purifierAPI.onSystemLog((logText) => {
+      appendSystemLog(logText);
+    });
   }
 });

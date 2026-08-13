@@ -4,6 +4,9 @@ contextBridge.exposeInMainWorld('purifierAPI', {
   onBackendEvent: (callback) => {
     ipcRenderer.on('backend-event', (event, data) => callback(data));
   },
+  onSystemLog: (callback) => {
+    ipcRenderer.on('system-log-event', (event, data) => callback(data));
+  },
   executeOsBan: (commandStr, payload) => {
     let banPayload = commandStr;
     if (typeof commandStr === 'string' && payload) {

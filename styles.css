@@ -43,7 +43,7 @@ html.light {
   --text-muted: #475569;
   --text-dim: #64748b;
 
-  --terminal-bg: #0f172a;
+  --terminal-bg: #ffffff;
   --header-title-color: #0f172a;
   --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
@@ -65,6 +65,33 @@ body {
   overflow-x: hidden;
   min-height: 100vh;
   transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .scanline-overlay {
@@ -922,6 +949,37 @@ html.light .table-count {
   padding: 0 10px 10px 10px;
 }
 
+.table-wrapper::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+html.light .table-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html.light .table-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+html.light .table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
 .table-panel .table-wrapper {
   flex: 1;
   height: 510px;
@@ -1214,14 +1272,57 @@ html.light .terminal-title {
   color: #f1f5f9;
 }
 
-.terminal-scroll::-webkit-scrollbar { width: 4px; }
+html.light .terminal-panel {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+html.light .terminal-header {
+  background: #f1f5f9;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  color: #0f172a;
+}
+
+html.light .linux-prompt {
+  color: #059669;
+}
+
+html.light .terminal-title {
+  color: #475569;
+}
+
+html.light .linux-btn {
+  color: #64748b;
+}
+
+html.light .linux-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #0f172a;
+}
+
+html.light .terminal-body {
+  color: #0f172a;
+}
+
+.terminal-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
 .terminal-scroll::-webkit-scrollbar-track { background: transparent; }
-.terminal-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
+.terminal-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 3px; transition: background 0.2s ease; }
+.terminal-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.35); }
+
+html.light .terminal-scroll::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.18); }
+html.light .terminal-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.35); }
 
 .log-entry { margin-bottom: 4px; }
 .log-entry.info { color: #94a3b8; }
+.log-entry.clear { color: var(--accent-green); }
 .log-entry.warn { color: var(--accent-amber); }
 .log-entry.blocked { color: var(--accent-red); font-weight: 700; }
+
+html.light .log-entry.info { color: #334155; }
+html.light .log-entry.clear { color: #059669; }
+html.light .log-entry.warn { color: #d97706; }
+html.light .log-entry.blocked { color: #dc2626; font-weight: 700; }
 
 .terminal-footer {
   padding: 10px 14px;
@@ -1233,12 +1334,20 @@ html.light .terminal-title {
   gap: 8px;
 }
 
+html.light .terminal-footer {
+  background: rgba(0, 0, 0, 0.03);
+}
+
 .terminal-footer code {
   font-size: 10px;
   color: var(--accent-amber);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+html.light .terminal-footer code {
+  color: #d97706;
 }
 
 .btn-exec {
