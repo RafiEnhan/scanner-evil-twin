@@ -84,11 +84,6 @@ def scan_live_mac_airspace():
                 if not s:
                     continue
 
-                # [FIX BUG-003] nmcli -t mode meng-escape karakter ':' di dalam
-                # nilai field sebagai '\:'. Karena BSSID menggunakan ':' sebagai
-                # separator oktet yang TIDAK di-escape, kita harus split hanya pada
-                # ':' yang tidak didahului backslash agar SSID dengan ':' tidak
-                # menggeser indeks dan merusak parsing BSSID.
                 parts = re.split(r'(?<!\\):', s)
 
                 if len(parts) >= 4:

@@ -119,9 +119,6 @@ class PuriFierDaemon:
                                       untuk menghitung rssi_diff. Default None (diff=0).
             channel (str): Channel frekuensi jaringan (1-11, 36, 44, 149).
         """
-        # [FIX BUG-004] Hanya tambahkan ke histori jika seq_val adalah data nyata
-        # (bukan None). seq_val=None berarti TShark belum menangkap data untuk
-        # BSSID ini — mengisi deque dengan 0 palsu akan meracuni entropy histogram.
         if seq_val is not None:
             self.seq_history[bssid].append(seq_val)
 
@@ -281,9 +278,6 @@ class PuriFierDaemon:
                 channel = net.get("channel", "6")
                 tsf_val = net.get("tsf", int(now_t * 1e6))
 
-                # [FIX BUG-004] Gunakan None sebagai sentinel jika TShark belum
-                # menangkap seq number untuk BSSID ini. Nilai 0 tidak dipakai lagi
-                # agar seq_history tidak tercemar dan entropy tetap akurat.
                 if bssid in self.real_tshark_sc:
                     seq_val = self.real_tshark_sc.pop(bssid)
                     engine = f"{net.get('engine', 'Native OS')} + TShark Real SC"
